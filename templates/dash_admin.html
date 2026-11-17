@@ -1,0 +1,112 @@
+{% extends "dash_base.html" %}
+{% from "_macros.html" import avatar, role_pill %}
+{% block title %}Admin dashboard{% endblock %}
+{% block heading %}Admin dashboard{% endblock %}
+{% block subheading %}Accounts, roles and backups{% endblock %}
+{% block nav %}
+<a class="active" href="{{ url_for('dash.admin') }}"><span>📊</span> Overview</a>
+<a href="#accounts"><span>👥</span> Accounts</a>
+<a href="#backups"><span>☁️</span> Backups</a>
+<a href="#password"><span>🔑</span> Password</a>
+{% endblock %}
+{% block content %}
+<div class="grid grid-4 stat-grid">
+  <div class="stat stat-indigo"><small>Total accounts</small><b>{{ stats.total }}</b></div>
+  <div class="stat stat-blue"><small>Active</small><b>{{ stats.active }}</b></div>
+  <div class="stat stat-teal"><small>Staff</small><b>{{ stats.staff }}</b></div>
+  <div class="stat stat-red"><small>Deleted</small><b>{{ stats.deleted }}</b></div>
+</div>
+
+<section class="panel" id="backups">
+  <div class="panel-head panel-head-row">
+    <div>
+      <h2>Cloud backup</h2>
+      <p>Encrypted snapshot of all accounts, uploaded to AWS S3. Runs automatically every day.</p>
+    </div>
+    <button class="btn btn-primary" type="button" id="backup-btn" data-url="{{ url_for('dash.admin_backup') }}">
+      <span class="btn-label">Back up now</span>
+      <span class="spinner" hidden></span>
+    </button>
+  </div>
+  <div class="backup-status">
+    <div><small>Last successful backup</small><b id="backup-last">{% if last_ok %}{{ last_ok.created_at|datetime }}{% else %}Never{% endif %}</b></div>
+    <div><small>Latest attempt</small>
+      <b>{% if last_backup %}{{ last_backup.created_at|datetime }} · {{ last_backup.triggered_by }}
+        {% if last_backup.status == 'success' %}<span class="pill pill-ok">Successful</span>{% else %}<span class="pill pill-deleted">Failed</span>{% endif %}
+      {% else %}—{% endif %}</b>
+      {% if last_backup and last_backup.status != 'success' and last_backup.detail %}<small class="err-detail">{{ last_backup.detail }}</small>{% endif %}
+    </div>
+  </div>
+</section>
+
+<section class="panel" id="accounts">
+  <div class="panel-head panel-head-row">
+    <div>
+      <h2>All accounts</h2>
+      <p>Passwords are never stored in plain text. You see each account's salt and its salted + peppered hash.</p>
+    </div>
+    <div class="toolbar">
+      <div class="seg" role="tablist" aria-label="Filter accounts">
+        <button type="button" class="seg-btn active" data-status-filter="all">All</button>
+        <button type="button" class="seg-btn" data-status-filter="active">Active</button>
+        <button type="button" class="seg-btn" data-status-filter="deleted">Deleted</button>
+      </div>
+      <input class="search" type="search" placeholder="Search accounts…" data-filter-input="admin-table" aria-label="Search accounts">
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table class="table table-admin" id="admin-table">
+      <thead>
+        <tr><th>User</th><th>Email</th><th>Role</th><th>Status</th><th>Joined</th><th>Salt</th><th>Password hash</th><th class="right">Actions</th></tr>
+      </thead>
+      <tbody>
+      {% for u in users %}
+        <tr class="{{ 'row-deleted' if u.is_deleted }}"
+            data-status="{{ 'deleted' if u.is_deleted else 'active' }}"
+            data-search="{{ (u.full_name ~ ' ' ~ u.username ~ ' ' ~ u.email ~ ' ' ~ u.role ~ ' ' ~ ('deleted' if u.is_deleted else 'active'))|lower }}">
+          <td><div class="person">{{ avatar(u.full_name, u.id) }}<div><b>{{ u.full_name }}</b><small>@{{ u.username }}</small></div></div></td>
+          <td>{{ u.email }}</td>
+          <td>{{ role_pill(u.role) }}</td>
+          <td>
+            {% if u.is_deleted %}
+              <span class="pill pill-deleted">Deleted</span>
+              <small class="sub">{{ u.deleted_at|date }}{% if u.deleted_by_name %} · by @{{ u.deleted_by_name }}{% endif %}</small>
+            {% else %}
+              <span class="pill pill-ok">Active</span>
+            {% endif %}
+          </td>
+          <td>{{ u.created_at|date }}</td>
+          <td><code class="secret" data-secret="{{ u.salt }}" tabindex="0" title="Click to reveal">{{ u.salt[:8] }}…</code></td>
+          <td><code class="secret" data-secret="{{ u.password_hash }}" tabindex="0" title="Click to reveal">{{ u.password_hash[:14] }}…</code></td>
+          <td class="right">
+            <div class="actions">
+              {% if u.role in assignable %}
+              <form method="post" action="{{ url_for('dash.admin_set_role', user_id=u.id) }}" class="inline-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <select name="role" aria-label="Role for {{ u.full_name }}">
+                  {% for r in assignable %}<option value="{{ r }}" {{ 'selected' if r == u.role }}>{{ r|capitalize }}</option>{% endfor %}
+                </select>
+                <button class="btn btn-soft btn-sm" type="submit">Save</button>
+              </form>
+              {% else %}
+                <small class="sub">Admin account</small>
+              {% endif %}
+              {% if u.is_deleted %}
+              <form method="post" action="{{ url_for('dash.admin_restore', user_id=u.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-success btn-sm" type="submit">Restore</button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="empty" data-empty hidden>No accounts match your filters.</p>
+</section>
+
+{% include "_password_card.html" %}
+{% endblock %}

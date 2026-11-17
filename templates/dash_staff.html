@@ -1,0 +1,54 @@
+{% extends "dash_base.html" %}
+{% from "_macros.html" import avatar %}
+{% block title %}Staff dashboard{% endblock %}
+{% block heading %}Staff dashboard{% endblock %}
+{% block subheading %}Manage active user accounts{% endblock %}
+{% block nav %}
+<a class="active" href="{{ url_for('dash.staff') }}"><span>👥</span> Users</a>
+<a href="#password"><span>🔑</span> Password</a>
+{% endblock %}
+{% block content %}
+<div class="grid grid-3 stat-grid">
+  <div class="stat stat-teal"><small>Active users</small><b>{{ users|length }}</b></div>
+  <div class="stat"><small>Your role</small><b>Staff</b></div>
+  <div class="stat"><small>Can delete</small><b>Users only</b></div>
+</div>
+
+<section class="panel">
+  <div class="panel-head panel-head-row">
+    <div><h2>Active users</h2><p>Deleted accounts disappear from this list. An administrator can restore them.</p></div>
+    <input class="search" type="search" placeholder="Search users…" data-filter-input="staff-table" aria-label="Search users">
+  </div>
+
+  {% if users %}
+  <div class="table-wrap">
+    <table class="table" id="staff-table">
+      <thead><tr><th>User</th><th>Email</th><th>Joined</th><th>Last sign-in</th><th class="right">Action</th></tr></thead>
+      <tbody>
+      {% for u in users %}
+        <tr data-search="{{ (u.full_name ~ ' ' ~ u.username ~ ' ' ~ u.email)|lower }}">
+          <td><div class="person">{{ avatar(u.full_name, u.id) }}<div><b>{{ u.full_name }}</b><small>@{{ u.username }}</small></div></div></td>
+          <td>{{ u.email }}</td>
+          <td>{{ u.created_at|date }}</td>
+          <td>{{ u.last_login_at|datetime }}</td>
+          <td class="right">
+            <form method="post" action="{{ url_for('dash.staff_delete', user_id=u.id) }}"
+                  data-confirm="Delete {{ u.full_name }}?"
+                  data-confirm-text="They will lose access straight away. An administrator can restore the account later.">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="btn btn-danger-soft btn-sm" type="submit">Delete</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="empty" data-empty hidden>No users match your search.</p>
+  {% else %}
+  <div class="empty-state"><div>🎉</div><h3>No active users</h3><p>New sign-ups will show up here.</p></div>
+  {% endif %}
+</section>
+
+{% include "_password_card.html" %}
+{% endblock %}

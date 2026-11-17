@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% from "_macros.html" import logo %}
+{% block title %}Secure access for your organisation{% endblock %}
+{% block body_class %}public{% endblock %}
+{% block body %}
+<header class="nav">
+  <a class="brand" href="{{ url_for('auth.landing') }}">{{ logo(34) }}<span>Sentry Hub</span></a>
+  <nav class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#roles">Roles</a>
+    <a href="#how">How it works</a>
+  </nav>
+  <div class="nav-cta">
+    <a class="btn btn-ghost-light" href="{{ url_for('auth.login') }}">Sign in</a>
+    <a class="btn btn-accent" href="{{ url_for('auth.register') }}">Create account</a>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="hero-glow hero-glow-a"></div>
+  <div class="hero-glow hero-glow-b"></div>
+  <div class="hero-inner">
+    <div class="hero-copy">
+      <span class="eyebrow"><span class="dot"></span> Secure by design</span>
+      <h1>The front door to your organisation, <em>guarded properly.</em></h1>
+      <p class="lead">Sentry Hub gives every person the right level of access. Salted and peppered passwords, a one-time code by email at every sign-in, and dashboards built for each role.</p>
+      <div class="hero-actions">
+        <a class="btn btn-accent btn-lg" href="{{ url_for('auth.register') }}">Get started</a>
+        <a class="btn btn-ghost-light btn-lg" href="{{ url_for('auth.login') }}">Sign in</a>
+      </div>
+      <ul class="trust">
+        <li>Two-step email verification</li>
+        <li>Encrypted cloud backups</li>
+        <li>Role-based access</li>
+      </ul>
+    </div>
+
+    <div class="hero-visual" aria-hidden="true">
+      <div class="mock">
+        <div class="mock-bar"><i></i><i></i><i></i><span>Admin overview</span></div>
+        <div class="mock-stats">
+          <div><b>128</b><small>Accounts</small></div>
+          <div><b>12</b><small>Staff</small></div>
+          <div><b>3</b><small>Deleted</small></div>
+        </div>
+        <div class="mock-rows">
+          <div class="mock-row"><span class="avatar av-0">AO</span><div><b>Amara Okoye</b><small>amara@org.com</small></div><span class="pill pill-staff">Staff</span></div>
+          <div class="mock-row"><span class="avatar av-2">JL</span><div><b>Jonas Lind</b><small>jonas@org.com</small></div><span class="pill pill-user">User</span></div>
+          <div class="mock-row mock-row-deleted"><span class="avatar av-4">PR</span><div><b>Priya Raman</b><small>priya@org.com</small></div><span class="pill pill-deleted">Deleted</span></div>
+        </div>
+      </div>
+      <div class="float-card float-code"><small>Your code</small><b>482 913</b></div>
+      <div class="float-card float-backup"><span class="tick">✓</span> Backup successful</div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="features">
+  <div class="section-head">
+    <span class="eyebrow eyebrow-dark">What's inside</span>
+    <h2>Security that doesn't get in the way</h2>
+    <p>Everything you need to know who is signing in, prove it's really them, and control what they can touch.</p>
+  </div>
+  <div class="grid grid-4">
+    <article class="card feature"><div class="icon icon-indigo">🔐</div><h3>Salt &amp; pepper</h3><p>Every password gets its own random salt plus a secret pepper that never touches the database, then it's hashed with scrypt.</p></article>
+    <article class="card feature"><div class="icon icon-teal">✉️</div><h3>Email verification</h3><p>After the password, a fresh 6-digit code is emailed. It expires in 10 minutes and works once.</p></article>
+    <article class="card feature"><div class="icon icon-violet">🧭</div><h3>Role-based access</h3><p>Admin, staff and user each get their own dashboard, and the server checks every request.</p></article>
+    <article class="card feature"><div class="icon icon-blue">☁️</div><h3>Cloud backups</h3><p>Encrypted snapshots go to AWS S3 every day, or on demand with one click.</p></article>
+  </div>
+</section>
+
+<section class="section section-tint" id="roles">
+  <div class="section-head">
+    <span class="eyebrow eyebrow-dark">Three roles</span>
+    <h2>The right view for everyone</h2>
+  </div>
+  <div class="grid grid-3">
+    <article class="card role role-admin"><span class="pill pill-admin">Admin</span><h3>Full control</h3><ul><li>See every account and its details</li><li>Change roles for staff and users</li><li>Restore deleted accounts</li><li>Run and monitor backups</li></ul></article>
+    <article class="card role role-staff"><span class="pill pill-staff">Staff</span><h3>Day-to-day management</h3><ul><li>See all active users</li><li>Delete user accounts</li><li>Deleted accounts leave the list at once</li></ul></article>
+    <article class="card role role-user"><span class="pill pill-user">User</span><h3>Your own space</h3><ul><li>View your profile</li><li>Change your password</li><li>Sign in safely with email codes</li></ul></article>
+  </div>
+</section>
+
+<section class="section" id="how">
+  <div class="section-head">
+    <span class="eyebrow eyebrow-dark">How it works</span>
+    <h2>Signing in takes three steps</h2>
+  </div>
+  <ol class="steps">
+    <li><span class="step-n">1</span><h3>Enter your details</h3><p>Username or email, and your password.</p></li>
+    <li><span class="step-n">2</span><h3>Check your inbox</h3><p>We email a 6-digit code to the address on your account.</p></li>
+    <li><span class="step-n">3</span><h3>You're in</h3><p>Land on the dashboard made for your role.</p></li>
+  </ol>
+</section>
+
+<section class="cta">
+  <h2>Ready to get your team in?</h2>
+  <p>Create your account in under a minute.</p>
+  <a class="btn btn-accent btn-lg" href="{{ url_for('auth.register') }}">Create account</a>
+</section>
+
+<footer class="footer">
+  <a class="brand brand-sm" href="{{ url_for('auth.landing') }}">{{ logo(26) }}<span>Sentry Hub</span></a>
+  <p>© Sentry Hub. Secure access for organisations.</p>
+</footer>
+{% endblock %}

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% from "_macros.html" import logo, role_pill, avatar %}
+{% block body_class %}app{% endblock %}
+{% block body %}
+<div class="shell">
+  <aside class="sidebar" id="sidebar">
+    <a class="brand brand-light" href="{{ url_for('auth.landing') }}">{{ logo(34) }}<span>Sentry Hub</span></a>
+
+    <nav class="side-nav" aria-label="Main">
+      {% block nav %}{% endblock %}
+    </nav>
+
+    <div class="side-foot">
+      <div class="me">
+        {{ avatar(current_user.full_name, current_user.id) }}
+        <div>
+          <b>{{ current_user.full_name }}</b>
+          <small>@{{ current_user.username }}</small>
+        </div>
+      </div>
+      <form method="post" action="{{ url_for('auth.logout') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-ghost-light btn-block" type="submit">Sign out</button>
+      </form>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <button class="menu-btn" type="button" data-menu aria-label="Open menu">☰</button>
+      <div class="topbar-title">
+        <h1>{% block heading %}Dashboard{% endblock %}</h1>
+        <p>{% block subheading %}{% endblock %}</p>
+      </div>
+      <div class="topbar-right">
+        {{ role_pill(current_user.role) }}
+        {{ avatar(current_user.full_name, current_user.id) }}
+      </div>
+    </header>
+
+    <main class="content">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+{% endblock %}
