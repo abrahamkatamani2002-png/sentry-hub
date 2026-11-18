@@ -1,0 +1,46 @@
+{% extends "dash_base.html" %}
+{% block title %}Add member{% endblock %}
+{% block heading %}Add a member{% endblock %}
+{% block subheading %}They choose their own password from an emailed link{% endblock %}
+{% block nav %}{% with active = 'new' %}{% include "_nav_admin.html" %}{% endwith %}{% endblock %}
+{% block content %}
+<div class="two-col">
+  <section class="panel">
+    <div class="panel-head"><h2>Member details</h2><p>An invitation is emailed to the address below.</p></div>
+
+    {% if errors %}
+    <div class="alert alert-error" role="alert"><ul>{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul></div>
+    {% endif %}
+
+    <form method="post" action="{{ url_for('dash.admin_new_member') }}" class="form form-narrow" novalidate>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label class="field"><span>Full name</span>
+        <input type="text" name="full_name" value="{{ form.full_name }}" autocomplete="off" required autofocus></label>
+      <div class="field-row">
+        <label class="field"><span>Username</span>
+          <input type="text" name="username" value="{{ form.username }}" autocomplete="off" autocapitalize="none" required></label>
+        <label class="field"><span>Role</span>
+          <select name="role" required>
+            {% for r in assignable %}<option value="{{ r }}" {{ 'selected' if r == form.role }}>{{ r|capitalize }}</option>{% endfor %}
+          </select></label>
+      </div>
+      <label class="field"><span>Email</span>
+        <input type="email" name="email" value="{{ form.email }}" autocomplete="off" required></label>
+      <div class="form-actions form-actions-left">
+        <button class="btn btn-primary" type="submit">Add member and send invite</button>
+        <a class="btn btn-ghost" href="{{ url_for('dash.admin') }}">Cancel</a>
+      </div>
+    </form>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>What happens next</h2></div>
+    <ol class="flow-list">
+      <li><b>The member is created</b> with the role you chose. They can't sign in yet.</li>
+      <li><b>They receive an email</b> with a one-time link to set their password. It expires after 48 hours.</li>
+      <li><b>They sign in</b> with their password, then confirm with an emailed code.</li>
+    </ol>
+    <p class="muted note">You never see or type anyone's password. If an invite is lost, use <b>Resend invite</b> in the members list.</p>
+  </section>
+</div>
+{% endblock %}

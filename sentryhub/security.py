@@ -71,6 +71,16 @@ def otp_matches(code, salt_hex, expected_hex, pepper):
     return hmac.compare_digest(hash_otp(code, salt_hex, pepper), expected_hex)
 
 
+# --- one-time links (invites, password reset) ---------------------------------------------
+
+def new_token():
+    return secrets.token_urlsafe(32)
+
+
+def hash_token(token, pepper):
+    return hmac.new(pepper.encode("utf-8"), token.encode("utf-8"), hashlib.sha256).hexdigest()
+
+
 # --- CSRF ------------------------------------------------------------------------------
 
 def csrf_token():

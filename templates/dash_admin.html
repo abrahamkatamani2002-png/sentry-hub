@@ -2,20 +2,108 @@
 {% from "_macros.html" import avatar, role_pill %}
 {% block title %}Admin dashboard{% endblock %}
 {% block heading %}Admin dashboard{% endblock %}
-{% block subheading %}Accounts, roles and backups{% endblock %}
-{% block nav %}
-<a class="active" href="{{ url_for('dash.admin') }}"><span>📊</span> Overview</a>
-<a href="#accounts"><span>👥</span> Accounts</a>
-<a href="#backups"><span>☁️</span> Backups</a>
-<a href="#password"><span>🔑</span> Password</a>
-{% endblock %}
+{% block subheading %}Members, roles, notices and backups{% endblock %}
+{% block nav %}{% with active = 'overview' %}{% include "_nav_admin.html" %}{% endwith %}{% endblock %}
 {% block content %}
-<div class="grid grid-4 stat-grid">
+<div class="grid grid-auto stat-grid">
   <div class="stat stat-indigo"><small>Total accounts</small><b>{{ stats.total }}</b></div>
   <div class="stat stat-blue"><small>Active</small><b>{{ stats.active }}</b></div>
   <div class="stat stat-teal"><small>Staff</small><b>{{ stats.staff }}</b></div>
+  <div class="stat stat-amber"><small>Invited</small><b>{{ stats.pending }}</b></div>
   <div class="stat stat-red"><small>Deleted</small><b>{{ stats.deleted }}</b></div>
 </div>
+
+<section class="panel" id="accounts">
+  <div class="panel-head panel-head-row">
+    <div>
+      <h2>Members</h2>
+      <p>Passwords are never stored in plain text. You see each account's salt and its salted + peppered hash. Click a value to reveal it.</p>
+    </div>
+    <div class="toolbar">
+      <a class="btn btn-primary" href="{{ url_for('dash.admin_new_member') }}">＋ Add member</a>
+    </div>
+  </div>
+  <div class="toolbar toolbar-left">
+    <div class="seg" role="tablist" aria-label="Filter accounts">
+      <button type="button" class="seg-btn active" data-status-filter="all">All</button>
+      <button type="button" class="seg-btn" data-status-filter="active">Active</button>
+      <button type="button" class="seg-btn" data-status-filter="invited">Invited</button>
+      <button type="button" class="seg-btn" data-status-filter="deleted">Deleted</button>
+    </div>
+    <input class="search" type="search" placeholder="Search members…" data-filter-input="admin-table" aria-label="Search members">
+  </div>
+
+  <div class="table-wrap">
+    <table class="table table-admin" id="admin-table">
+      <thead>
+        <tr><th>Member</th><th>Email</th><th>Role</th><th>Status</th><th>Joined</th><th>Salt</th><th>Password hash</th><th class="right">Actions</th></tr>
+      </thead>
+      <tbody>
+      {% for u in users %}
+        {% set state = 'deleted' if u.is_deleted else ('invited' if u.is_pending else 'active') %}
+        <tr class="{{ 'row-deleted' if u.is_deleted }}" data-status="{{ state }}"
+            data-search="{{ (u.full_name ~ ' ' ~ u.username ~ ' ' ~ u.email ~ ' ' ~ u.role ~ ' ' ~ state)|lower }}">
+          <td><div class="person">{{ avatar(u.full_name, u.id, color=u.avatar_color) }}<div><b>{{ u.full_name }}</b><small>@{{ u.username }}</small></div></div></td>
+          <td>{{ u.email }}</td>
+          <td>{{ role_pill(u.role) }}</td>
+          <td>
+            {% if u.is_deleted %}
+              <span class="pill pill-deleted">Deleted</span>
+              <small class="sub">{{ u.deleted_at|date }}{% if u.deleted_by_name %} · by @{{ u.deleted_by_name }}{% endif %}</small>
+            {% elif u.is_pending %}
+              <span class="pill pill-warn">Invited</span>
+              <small class="sub">Awaiting password</small>
+            {% else %}
+              <span class="pill pill-ok">Active</span>
+            {% endif %}
+          </td>
+          <td>{{ u.created_at|date }}</td>
+          <td><code class="secret" data-secret="{{ u.salt }}" tabindex="0" title="Click to reveal">{{ u.salt[:8] }}…</code></td>
+          <td>
+            {% if u.is_pending %}<small class="sub">Not set yet</small>
+            {% else %}<code class="secret" data-secret="{{ u.password_hash }}" tabindex="0" title="Click to reveal">{{ u.password_hash[:14] }}…</code>{% endif %}
+          </td>
+          <td class="right">
+            <div class="actions">
+              {% if u.role == 'admin' %}
+                <small class="sub">Admin account</small>
+              {% elif not u.is_deleted %}
+              <form method="post" action="{{ url_for('dash.admin_set_role', user_id=u.id) }}" class="inline-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <select name="role" aria-label="Role for {{ u.full_name }}">
+                  {% for r in assignable %}<option value="{{ r }}" {{ 'selected' if r == u.role }}>{{ r|capitalize }}</option>{% endfor %}
+                </select>
+                <button class="btn btn-soft btn-sm" type="submit">Save</button>
+              </form>
+              {% endif %}
+              {% if u.is_pending and not u.is_deleted %}
+              <form method="post" action="{{ url_for('dash.admin_resend_invite', user_id=u.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-soft btn-sm" type="submit">Resend invite</button>
+              </form>
+              {% endif %}
+              {% if u.is_deleted %}
+              <form method="post" action="{{ url_for('dash.admin_restore', user_id=u.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-success btn-sm" type="submit">Restore</button>
+              </form>
+              {% elif u.role != 'admin' %}
+              <form method="post" action="{{ url_for('dash.admin_delete', user_id=u.id) }}"
+                    data-confirm="Delete {{ u.full_name }}?"
+                    data-confirm-text="They lose access straight away. You can restore them any time from Deleted members.">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-danger-soft btn-sm" type="submit">Delete</button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="empty" data-empty hidden>No members match your filters.</p>
+</section>
 
 <section class="panel" id="backups">
   <div class="panel-head panel-head-row">
@@ -39,74 +127,6 @@
   </div>
 </section>
 
-<section class="panel" id="accounts">
-  <div class="panel-head panel-head-row">
-    <div>
-      <h2>All accounts</h2>
-      <p>Passwords are never stored in plain text. You see each account's salt and its salted + peppered hash.</p>
-    </div>
-    <div class="toolbar">
-      <div class="seg" role="tablist" aria-label="Filter accounts">
-        <button type="button" class="seg-btn active" data-status-filter="all">All</button>
-        <button type="button" class="seg-btn" data-status-filter="active">Active</button>
-        <button type="button" class="seg-btn" data-status-filter="deleted">Deleted</button>
-      </div>
-      <input class="search" type="search" placeholder="Search accounts…" data-filter-input="admin-table" aria-label="Search accounts">
-    </div>
-  </div>
-
-  <div class="table-wrap">
-    <table class="table table-admin" id="admin-table">
-      <thead>
-        <tr><th>User</th><th>Email</th><th>Role</th><th>Status</th><th>Joined</th><th>Salt</th><th>Password hash</th><th class="right">Actions</th></tr>
-      </thead>
-      <tbody>
-      {% for u in users %}
-        <tr class="{{ 'row-deleted' if u.is_deleted }}"
-            data-status="{{ 'deleted' if u.is_deleted else 'active' }}"
-            data-search="{{ (u.full_name ~ ' ' ~ u.username ~ ' ' ~ u.email ~ ' ' ~ u.role ~ ' ' ~ ('deleted' if u.is_deleted else 'active'))|lower }}">
-          <td><div class="person">{{ avatar(u.full_name, u.id) }}<div><b>{{ u.full_name }}</b><small>@{{ u.username }}</small></div></div></td>
-          <td>{{ u.email }}</td>
-          <td>{{ role_pill(u.role) }}</td>
-          <td>
-            {% if u.is_deleted %}
-              <span class="pill pill-deleted">Deleted</span>
-              <small class="sub">{{ u.deleted_at|date }}{% if u.deleted_by_name %} · by @{{ u.deleted_by_name }}{% endif %}</small>
-            {% else %}
-              <span class="pill pill-ok">Active</span>
-            {% endif %}
-          </td>
-          <td>{{ u.created_at|date }}</td>
-          <td><code class="secret" data-secret="{{ u.salt }}" tabindex="0" title="Click to reveal">{{ u.salt[:8] }}…</code></td>
-          <td><code class="secret" data-secret="{{ u.password_hash }}" tabindex="0" title="Click to reveal">{{ u.password_hash[:14] }}…</code></td>
-          <td class="right">
-            <div class="actions">
-              {% if u.role in assignable %}
-              <form method="post" action="{{ url_for('dash.admin_set_role', user_id=u.id) }}" class="inline-form">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <select name="role" aria-label="Role for {{ u.full_name }}">
-                  {% for r in assignable %}<option value="{{ r }}" {{ 'selected' if r == u.role }}>{{ r|capitalize }}</option>{% endfor %}
-                </select>
-                <button class="btn btn-soft btn-sm" type="submit">Save</button>
-              </form>
-              {% else %}
-                <small class="sub">Admin account</small>
-              {% endif %}
-              {% if u.is_deleted %}
-              <form method="post" action="{{ url_for('dash.admin_restore', user_id=u.id) }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button class="btn btn-success btn-sm" type="submit">Restore</button>
-              </form>
-              {% endif %}
-            </div>
-          </td>
-        </tr>
-      {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  <p class="empty" data-empty hidden>No accounts match your filters.</p>
-</section>
-
+{% include "_notice_manager.html" %}
 {% include "_password_card.html" %}
 {% endblock %}

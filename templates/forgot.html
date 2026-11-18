@@ -1,0 +1,23 @@
+{% extends "_auth_shell.html" %}
+{% block title %}Forgot password{% endblock %}
+{% block side_title %}Locked out? No problem.{% endblock %}
+{% block side_text %}Tell us your email and we'll send a link to choose a new password.{% endblock %}
+{% block auth_content %}
+{% if sent %}
+<h1>Check your email</h1>
+<p class="muted">If that address belongs to a Sentry Hub account, a link to reset the password is on its way. It works once and expires in 1 hour.</p>
+<a class="btn btn-primary btn-block btn-spaced" href="{{ url_for('auth.login') }}">Back to sign in</a>
+{% else %}
+<h1>Forgot your password?</h1>
+<p class="muted">Enter the email on your account and we'll send you a reset link.</p>
+<form method="post" action="{{ url_for('auth.forgot') }}" class="form" novalidate>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <label class="field">
+    <span>Email</span>
+    <input type="email" name="email" autocomplete="email" required autofocus>
+  </label>
+  <button class="btn btn-primary btn-block" type="submit">Send reset link</button>
+</form>
+<p class="auth-switch"><a href="{{ url_for('auth.login') }}">Back to sign in</a></p>
+{% endif %}
+{% endblock %}

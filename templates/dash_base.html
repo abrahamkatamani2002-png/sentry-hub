@@ -12,7 +12,7 @@
 
     <div class="side-foot">
       <div class="me">
-        {{ avatar(current_user.full_name, current_user.id) }}
+        {{ avatar(current_user.full_name, current_user.id, color=current_user.avatar_color) }}
         <div>
           <b>{{ current_user.full_name }}</b>
           <small>@{{ current_user.username }}</small>
@@ -34,7 +34,7 @@
       </div>
       <div class="topbar-right">
         {{ role_pill(current_user.role) }}
-        {{ avatar(current_user.full_name, current_user.id) }}
+        {{ avatar(current_user.full_name, current_user.id, color=current_user.avatar_color) }}
       </div>
     </header>
 

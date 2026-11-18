@@ -90,7 +90,7 @@
       e.preventDefault();
       $("#confirm-title").textContent = form.dataset.confirm;
       $("#confirm-text").textContent = form.dataset.confirmText || "";
-      $("#confirm-ok").textContent = "Delete";
+      $("#confirm-ok").textContent = form.dataset.confirmButton || "Delete";
       dialog.returnValue = "";
       dialog.showModal();
       dialog.addEventListener("close", function onClose() {
@@ -110,19 +110,20 @@
     });
   }
 
-  /* ---- table search + status filter ---- */
+  /* ---- table search + status filter (each panel filters its own table) ---- */
   function applyFilters(table) {
-    var input = $('[data-filter-input="' + table.id + '"]');
+    var panel = table.closest(".panel");
+    var input = panel.querySelector("[data-filter-input]");
     var q = input ? input.value.trim().toLowerCase() : "";
-    var activeBtn = $("[data-status-filter].active");
-    var status = table.id === "admin-table" && activeBtn ? activeBtn.dataset.statusFilter : "all";
+    var activeBtn = panel.querySelector("[data-status-filter].active");
+    var status = activeBtn ? activeBtn.dataset.statusFilter : "all";
     var shown = 0;
     $$("tbody tr", table).forEach(function (row) {
       var ok = (!q || (row.dataset.search || "").indexOf(q) !== -1) && (status === "all" || row.dataset.status === status);
       row.hidden = !ok;
       if (ok) shown++;
     });
-    var empty = table.closest(".panel").querySelector("[data-empty]");
+    var empty = panel.querySelector("[data-empty]");
     if (empty) empty.hidden = shown !== 0;
   }
   $$("[data-filter-input]").forEach(function (input) {
@@ -131,10 +132,17 @@
   });
   $$("[data-status-filter]").forEach(function (btn) {
     btn.addEventListener("click", function () {
-      $$("[data-status-filter]").forEach(function (b) { b.classList.toggle("active", b === btn); });
-      var table = $("#admin-table");
+      var panel = btn.closest(".panel");
+      $$("[data-status-filter]", panel).forEach(function (b) { b.classList.toggle("active", b === btn); });
+      var table = panel.querySelector("table.table");
       if (table) applyFilters(table);
     });
+  });
+
+  /* ---- time-of-day greeting (uses the visitor's own clock) ---- */
+  $$("[data-greeting]").forEach(function (el) {
+    var h = new Date().getHours();
+    el.textContent = h < 5 ? "Hello" : h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
   });
 
   /* ---- reveal the full salt / hash on click ---- */

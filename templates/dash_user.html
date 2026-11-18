@@ -1,38 +1,119 @@
 {% extends "dash_base.html" %}
 {% from "_macros.html" import avatar, role_pill %}
+{% from "_notices.html" import notice with context %}
 {% block title %}My account{% endblock %}
-{% block heading %}Hello, {{ current_user.full_name.split()[0] }} 👋{% endblock %}
-{% block subheading %}Your account at a glance{% endblock %}
+{% block heading %}<span data-greeting>Hello</span>, {{ current_user.full_name.split()[0] }} 👋{% endblock %}
+{% block subheading %}Here's what's happening with your account{% endblock %}
 {% block nav %}
 <a class="active" href="{{ url_for('dash.overview') }}"><span>🏠</span> My account</a>
+<a href="#health"><span>🛡️</span> Account health</a>
+<a href="#notices"><span>📣</span> Notice board</a>
+<a href="#profile"><span>✏️</span> Edit profile</a>
 <a href="#password"><span>🔑</span> Password</a>
 {% endblock %}
 {% block content %}
 <section class="profile-hero">
-  {{ avatar(current_user.full_name, current_user.id, "avatar-xl") }}
-  <div>
+  {{ avatar(current_user.full_name, current_user.id, "avatar-xl", current_user.avatar_color) }}
+  <div class="profile-text">
     <h2>{{ current_user.full_name }}</h2>
-    <p>@{{ current_user.username }} · {{ current_user.email }}</p>
-    <div class="profile-tags">{{ role_pill(current_user.role) }}<span class="pill pill-ok">Email verification on</span></div>
+    <p class="profile-sub">{% if current_user.job_title %}{{ current_user.job_title }} · {% endif %}@{{ current_user.username }} · {{ current_user.email }}</p>
+    <div class="profile-tags">{{ role_pill(current_user.role) }}<span class="pill pill-ok">Two-step sign-in on</span></div>
+    {% if current_user.bio %}<p class="profile-bio">{{ current_user.bio }}</p>
+    {% else %}<p class="profile-bio profile-bio-empty">Add a short bio in <a href="#profile">Edit profile</a> to tell people who you are.</p>{% endif %}
   </div>
 </section>
 
 <div class="grid grid-3 stat-grid">
-  <div class="stat"><small>Member since</small><b>{{ current_user.created_at|date }}</b></div>
-  <div class="stat"><small>Last sign-in</small><b>{{ current_user.last_login_at|datetime }}</b></div>
-  <div class="stat"><small>Two-step sign-in</small><b>Email code</b></div>
+  <div class="stat stat-indigo"><small>Member since</small><b>{{ current_user.created_at|date }}</b></div>
+  <div class="stat stat-teal"><small>Your journey</small><b>Day {{ days }}</b></div>
+  <div class="stat stat-blue"><small>Last sign-in</small><b class="stat-sm">{{ current_user.last_login_at|datetime }}</b></div>
 </div>
 
 <div class="two-col">
-  {% include "_password_card.html" %}
-  <section class="panel">
-    <div class="panel-head"><h2>How your account is protected</h2></div>
-    <ul class="check-list">
-      <li>Your password is salted, peppered and hashed. Nobody can read it.</li>
-      <li>Every sign-in needs a one-time code sent to your email.</li>
-      <li>Codes expire after 10 minutes and only work once.</li>
-      <li>Repeated wrong passwords lock the account for 15 minutes.</li>
+  <section class="panel" id="health">
+    <div class="panel-head"><h2>Account health</h2><p>A quick check of how well your account is set up.</p></div>
+    <div class="health">
+      <div class="ring" role="img" aria-label="Account health score {{ health.score }} out of 100">
+        <svg viewBox="0 0 120 120" width="132" height="132" aria-hidden="true">
+          <defs>
+            <linearGradient id="ringgrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#6366f1"/><stop offset="1" stop-color="#14b8a6"/>
+            </linearGradient>
+          </defs>
+          <circle class="ring-bg" cx="60" cy="60" r="52" fill="none" stroke-width="12"/>
+          <circle class="ring-fg" cx="60" cy="60" r="52" fill="none" stroke-width="12" stroke-linecap="round"
+                  stroke="url(#ringgrad)" stroke-dasharray="{{ (health.score * 3.2673)|round(1) }} 326.7"/>
+        </svg>
+        <div class="ring-label"><b>{{ health.score }}</b><small>of 100</small></div>
+      </div>
+      <div class="health-copy">
+        <h3>{{ health.level }}</h3>
+        <p class="muted">{{ health.tip }}</p>
+      </div>
+    </div>
+    <ul class="health-list">
+      {% for item in health['items'] %}
+      <li class="{{ 'done' if item.done else 'todo' }}">
+        <span class="tick-dot" aria-hidden="true">{{ '✓' if item.done else '' }}</span>
+        <span class="health-label">{{ item.label }}</span>
+        <span class="health-pts">{{ '+' ~ item.points if item.done else item.points ~ ' pts' }}</span>
+      </li>
+      {% endfor %}
     </ul>
   </section>
+
+  <section class="panel" id="signins">
+    <div class="panel-head"><h2>Recent sign-ins</h2><p>Your last five sign-ins. Times are in UTC.</p></div>
+    {% if signins %}
+    <ul class="signins">
+      {% for s in signins %}
+      <li>
+        <span class="si-icon" aria-hidden="true">💻</span>
+        <div><b>{{ s.detail or 'Unknown device' }}</b><small>{{ s.created_at|datetime }}</small></div>
+        {% if loop.first %}<span class="pill pill-ok">Latest</span>{% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+    <p class="muted note">Don't recognise one? <a href="#password">Change your password</a> straight away.</p>
+    {% else %}
+    <div class="empty-state"><div>🔐</div><h3>No sign-ins yet</h3><p>Your sign-ins will be listed here.</p></div>
+    {% endif %}
+  </section>
+</div>
+
+<section class="panel" id="notices">
+  <div class="panel-head"><h2>Notice board</h2><p>Announcements from your admins and staff.</p></div>
+  {% if notices %}
+  <div class="notice-list">{% for n in notices %}{{ notice(n) }}{% endfor %}</div>
+  {% else %}
+  <div class="empty-state"><div>📣</div><h3>No announcements yet</h3><p>When your team posts something, you'll see it here.</p></div>
+  {% endif %}
+</section>
+
+<div class="two-col">
+  <section class="panel" id="profile">
+    <div class="panel-head"><h2>Edit profile</h2><p>Tell people who you are and pick your colour.</p></div>
+    <form method="post" action="{{ url_for('dash.update_profile') }}" class="form form-narrow" novalidate>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label class="field"><span>Job title</span>
+        <input type="text" name="job_title" maxlength="60" value="{{ current_user.job_title }}" placeholder="e.g. Marketing lead"></label>
+      <label class="field"><span>About you</span>
+        <textarea name="bio" rows="3" maxlength="240" placeholder="A sentence or two about you…">{{ current_user.bio }}</textarea></label>
+      {% set chosen = current_user.avatar_color if current_user.avatar_color is not none else current_user.id % 6 %}
+      <fieldset class="field">
+        <legend>Avatar colour</legend>
+        <div class="swatches">
+          {% for i in range(6) %}
+          <label class="swatch-opt">
+            <input type="radio" name="avatar_color" value="{{ i }}" {{ 'checked' if i == chosen }}>
+            <span class="swatch av-{{ i }}">{{ current_user.full_name|initials }}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </fieldset>
+      <button class="btn btn-primary" type="submit">Save profile</button>
+    </form>
+  </section>
+  {% include "_password_card.html" %}
 </div>
 {% endblock %}

@@ -3,8 +3,12 @@
 Production uses Postgres (Neon) through psycopg. For local development and tests a
 `sqlite:///file.db` URL works too, so the same SQL (written with %s placeholders) runs on both.
 Timestamps are stored as Unix epoch seconds to keep the SQL portable.
+
+Upgrades: new tables are created with CREATE TABLE IF NOT EXISTS, and new columns on tables that
+already exist are added by `migrate()` at start-up. Existing rows are never touched.
 """
 import sqlite3
+import time
 
 from flask import current_app, g
 
@@ -35,6 +39,11 @@ CREATE TABLE IF NOT EXISTS users (
     is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
     deleted_at BIGINT,
     deleted_by BIGINT,
+    is_pending BOOLEAN NOT NULL DEFAULT FALSE,
+    job_title TEXT NOT NULL DEFAULT '',
+    bio TEXT NOT NULL DEFAULT '',
+    avatar_color INTEGER,
+    password_changed_at BIGINT,
     failed_attempts INTEGER NOT NULL DEFAULT 0,
     locked_until BIGINT NOT NULL DEFAULT 0,
     last_login_at BIGINT,
@@ -63,7 +72,53 @@ CREATE TABLE IF NOT EXISTS backups (
     size_bytes BIGINT,
     detail TEXT
 );
+
+CREATE TABLE IF NOT EXISTS password_tokens (
+    id {ID},
+    user_id BIGINT NOT NULL REFERENCES users (id),
+    token_hash TEXT NOT NULL UNIQUE,
+    purpose TEXT NOT NULL,
+    expires_at BIGINT NOT NULL,
+    used BOOLEAN NOT NULL DEFAULT FALSE,
+    created_by BIGINT,
+    created_at BIGINT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_tokens_user ON password_tokens (user_id, created_at);
+
+CREATE TABLE IF NOT EXISTS activity_log (
+    id {ID},
+    created_at BIGINT NOT NULL,
+    actor_id BIGINT,
+    actor_name TEXT NOT NULL,
+    action TEXT NOT NULL,
+    target_id BIGINT,
+    target_name TEXT,
+    detail TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_activity_target ON activity_log (target_id, action, id);
+
+CREATE TABLE IF NOT EXISTS announcements (
+    id {ID},
+    title TEXT NOT NULL,
+    body TEXT NOT NULL,
+    pinned BOOLEAN NOT NULL DEFAULT FALSE,
+    author_id BIGINT,
+    author_name TEXT NOT NULL,
+    author_role TEXT NOT NULL,
+    created_at BIGINT NOT NULL
+);
 """
+
+# Columns added after the first release. (table, column, definition)
+MIGRATIONS = [
+    ("users", "is_pending", "BOOLEAN NOT NULL DEFAULT FALSE"),
+    ("users", "job_title", "TEXT NOT NULL DEFAULT ''"),
+    ("users", "bio", "TEXT NOT NULL DEFAULT ''"),
+    ("users", "avatar_color", "INTEGER"),
+    ("users", "password_changed_at", "BIGINT"),
+]
 
 _ID_PG = "BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY"
 _ID_SQLITE = "INTEGER PRIMARY KEY AUTOINCREMENT"
@@ -71,6 +126,11 @@ _ID_SQLITE = "INTEGER PRIMARY KEY AUTOINCREMENT"
 
 def schema_sql(kind):
     return SCHEMA.replace("{ID}", _ID_SQLITE if kind == "sqlite" else _ID_PG)
+
+
+def migration_sql_postgres():
+    """The same upgrade as migrate(), as plain SQL you can paste into Neon's SQL editor."""
+    return "\n".join(f"ALTER TABLE {t} ADD COLUMN IF NOT EXISTS {c} {d};" for t, c, d in MIGRATIONS)
 
 
 class Conn:
@@ -113,8 +173,21 @@ class Conn:
         if self.kind == "sqlite":
             self.raw.executescript(sql)
         else:
-            self.raw.execute(sql)
+            for statement in sql.split(";"):
+                if statement.strip():
+                    self.raw.execute(statement)
             self.raw.commit()
+
+    def columns(self, table):
+        if self.kind == "sqlite":
+            return {r["name"] for r in self.all(f"PRAGMA table_info({table})")}
+        return {
+            r["column_name"]
+            for r in self.all(
+                "SELECT column_name FROM information_schema.columns WHERE table_name = %s AND table_schema = current_schema()",
+                (table,),
+            )
+        }
 
     def commit(self):
         self.raw.commit()
@@ -139,19 +212,27 @@ def connect(url):
     return Conn(raw, "postgres")
 
 
+def migrate(conn):
+    """Add any columns that older databases are missing. Safe to run every start-up."""
+    for table, column, definition in MIGRATIONS:
+        if column not in conn.columns(table):
+            conn.script(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
+
+
 # --- per-request connection ----------------------------------------------------------------
 
 _READY = set()
 
 
 def ensure_ready(app):
-    """Create tables (idempotent) and the first admin, once per server process."""
+    """Create/upgrade tables (idempotent) and the first admin, once per server process."""
     url = app.config["DATABASE_URL"]
     if url in _READY:
         return
     conn = connect(url)
     try:
         conn.script(schema_sql(conn.kind))
+        migrate(conn)
         ensure_admin(conn, app.config)
         conn.commit()
     finally:
@@ -168,16 +249,16 @@ def ensure_admin(conn, cfg):
     problem = security.validate_password(password)
     if problem:
         raise RuntimeError("ADMIN_PASSWORD rejected: " + problem)
-    import time
 
+    now = int(time.time())
     salt = security.new_salt()
     try:
         conn.insert(
-            "INSERT INTO users (username, email, full_name, role, salt, password_hash, hash_version, created_at) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
+            "INSERT INTO users (username, email, full_name, role, salt, password_hash, hash_version, "
+            "password_changed_at, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
             (
                 username.strip().lower(), email.strip().lower(), "Administrator", "admin", salt,
-                security.hash_password(password, salt, cfg["PEPPER"]), security.HASH_VERSION, int(time.time()),
+                security.hash_password(password, salt, cfg["PEPPER"]), security.HASH_VERSION, now, now,
             ),
         )
     except IntegrityError:

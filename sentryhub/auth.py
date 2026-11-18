@@ -1,10 +1,10 @@
-"""Registration, sign-in with emailed one-time code, and sign-out."""
+"""Registration, sign-in with emailed one-time code, password links and sign-out."""
 import re
 import time
 
 from flask import Blueprint, current_app, flash, g, redirect, render_template, request, session, url_for
 
-from . import db, security
+from . import activity, db, invites, mailer, security
 from .formatting import mask_email
 from .mailer import MailError, send_login_code
 from .roles import home_endpoint
@@ -91,14 +91,15 @@ def register():
 
         if not errors:
             salt = security.new_salt()
+            now = int(time.time())
             try:
                 db.get_db().insert(
-                    "INSERT INTO users (username, email, full_name, role, salt, password_hash, hash_version, created_at) "
-                    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
+                    "INSERT INTO users (username, email, full_name, role, salt, password_hash, hash_version, "
+                    "password_changed_at, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
                     (
                         form["username"], form["email"], form["full_name"], "user", salt,
                         security.hash_password(password, salt, current_app.config["PEPPER"]),
-                        security.HASH_VERSION, int(time.time()),
+                        security.HASH_VERSION, now, now,
                     ),
                 )
             except db.IntegrityError:
@@ -124,7 +125,8 @@ def login():
     now = int(time.time())
 
     user = conn.one("SELECT * FROM users WHERE username = %s OR email = %s", (ident, ident)) if ident else None
-    if user is None or user["locked_until"] > now:
+    # Invited members who haven't chosen a password yet can't sign in either.
+    if user is None or user["locked_until"] > now or user["is_pending"]:
         security.burn_time(password, cfg["PEPPER"])
         return render_template("login.html", identifier=ident, error=GENERIC_LOGIN_ERROR), 401
 
@@ -134,6 +136,7 @@ def login():
             conn.run("UPDATE users SET failed_attempts = 0, locked_until = %s WHERE id = %s", (now + LOCK_SECONDS, user["id"]))
         else:
             conn.run("UPDATE users SET failed_attempts = %s WHERE id = %s", (failed, user["id"]))
+        activity.log_event(conn, user, "login_failed", target=user, detail="Wrong password")
         return render_template("login.html", identifier=ident, error=GENERIC_LOGIN_ERROR), 401
 
     conn.run("UPDATE users SET failed_attempts = 0 WHERE id = %s", (user["id"],))
@@ -203,6 +206,9 @@ def verify():
 
     conn.run("UPDATE login_challenges SET attempts = %s, used = %s WHERE id = %s", (attempts, True, challenge["id"]))
     conn.run("UPDATE users SET last_login_at = %s WHERE id = %s", (now, user["id"]))
+    activity.log_event(
+        conn, user, "login", target=user, detail=activity.describe_agent(request.headers.get("User-Agent", ""))
+    )
     session.clear()  # new session on privilege change
     session["uid"] = user["id"]
     session.permanent = True
@@ -240,3 +246,60 @@ def logout():
     session.clear()
     flash("You've been signed out.", "info")
     return redirect(url_for("auth.landing"))
+
+
+# --- forgot password and password links (invites) -------------------------------------------
+
+@bp.route("/forgot", methods=["GET", "POST"])
+def forgot():
+    if g.user:
+        return redirect(url_for(home_endpoint(g.user["role"])))
+    if request.method == "GET":
+        return render_template("forgot.html", sent=False)
+
+    conn = db.get_db()
+    cfg = current_app.config
+    email = request.form.get("email", "").strip().lower()[:254]
+    user = conn.one("SELECT * FROM users WHERE email = %s", (email,)) if email else None
+    if user and not user["is_deleted"]:
+        try:
+            token = invites.issue_token(conn, cfg, user["id"], "reset")
+            mailer.send_reset(cfg, user, invites.link(cfg, token))
+            activity.log_event(conn, "anonymous", "reset_requested", target=user)
+        except invites.TokenLimit:
+            pass  # too many recent links; stay silent so the page reveals nothing
+        except MailError as exc:
+            current_app.logger.error("Could not send reset email: %s", exc)
+    # The same answer whether or not the address is registered.
+    return render_template("forgot.html", sent=True)
+
+
+@bp.route("/set-password/<token>", methods=["GET", "POST"])
+def set_password(token):
+    conn = db.get_db()
+    cfg = current_app.config
+    row = invites.find_valid(conn, cfg, token)
+    if row is None:
+        return render_template("set_password.html", invalid=True), 400
+
+    error = None
+    if request.method == "POST":
+        password = request.form.get("password", "")
+        confirm = request.form.get("confirm", "")
+        error = security.validate_password(password) or (None if password == confirm else "The two passwords don't match.")
+        if error is None:
+            now = int(time.time())
+            salt = security.new_salt()
+            conn.run(
+                "UPDATE users SET salt = %s, password_hash = %s, hash_version = %s, is_pending = %s, "
+                "password_changed_at = %s, failed_attempts = 0, locked_until = 0 WHERE id = %s",
+                (salt, security.hash_password(password, salt, cfg["PEPPER"]), security.HASH_VERSION, False, now, row["user_id"]),
+            )
+            invites.consume(conn, row["user_id"])
+            target = {"id": row["user_id"], "username": row["username"]}
+            activity.log_event(
+                conn, target, "invite_accepted" if row["purpose"] == "invite" else "password_reset", target=target
+            )
+            flash("Password saved. Sign in to continue.", "success")
+            return redirect(url_for("auth.login"))
+    return render_template("set_password.html", invalid=False, error=error, row=row), (400 if error else 200)

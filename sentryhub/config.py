@@ -26,6 +26,8 @@ def load_config(overrides=None):
         "SECRET_KEY": env("SECRET_KEY", ""),
         "PEPPER": env("PEPPER", ""),
         "SESSION_HOURS": _int("SESSION_HOURS", 2),
+        # Optional: your site's address (e.g. https://my-site.vercel.app). Used in emailed links.
+        "PUBLIC_URL": env("PUBLIC_URL", ""),
         # Email (Gmail SMTP by default)
         "MAIL_BACKEND": env("MAIL_BACKEND", "smtp"),
         "SMTP_HOST": env("SMTP_HOST", "smtp.gmail.com"),

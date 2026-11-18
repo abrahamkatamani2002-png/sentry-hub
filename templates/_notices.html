@@ -1,0 +1,25 @@
+{% from "_macros.html" import role_pill %}
+
+{# One announcement. With manage=True it also shows Pin / Delete buttons. #}
+{% macro notice(n, manage=False) %}
+<article class="notice {{ 'notice-pinned' if n.pinned }}">
+  <header>
+    <h3>{% if n.pinned %}<span class="pin" title="Pinned">📌</span> {% endif %}{{ n.title }}</h3>
+    {% if manage %}
+    <div class="notice-actions">
+      <form method="post" action="{{ url_for('notices.pin', notice_id=n.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-soft btn-sm" type="submit">{{ 'Unpin' if n.pinned else 'Pin' }}</button>
+      </form>
+      <form method="post" action="{{ url_for('notices.delete', notice_id=n.id) }}"
+            data-confirm="Delete this announcement?" data-confirm-text="It will disappear from every dashboard.">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-danger-soft btn-sm" type="submit">Delete</button>
+      </form>
+    </div>
+    {% endif %}
+  </header>
+  <p class="notice-body">{{ n.body }}</p>
+  <footer><b>{{ n.author_name }}</b> {{ role_pill(n.author_role) }} <span class="sub-inline">· {{ n.created_at|date }}</span></footer>
+</article>
+{% endmacro %}

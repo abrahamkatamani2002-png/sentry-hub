@@ -2,9 +2,10 @@
 {% from "_macros.html" import avatar %}
 {% block title %}Staff dashboard{% endblock %}
 {% block heading %}Staff dashboard{% endblock %}
-{% block subheading %}Manage active user accounts{% endblock %}
+{% block subheading %}Manage active users and keep everyone informed{% endblock %}
 {% block nav %}
 <a class="active" href="{{ url_for('dash.staff') }}"><span>👥</span> Users</a>
+<a href="#notices"><span>📣</span> Notice board</a>
 <a href="#password"><span>🔑</span> Password</a>
 {% endblock %}
 {% block content %}
@@ -27,8 +28,8 @@
       <tbody>
       {% for u in users %}
         <tr data-search="{{ (u.full_name ~ ' ' ~ u.username ~ ' ' ~ u.email)|lower }}">
-          <td><div class="person">{{ avatar(u.full_name, u.id) }}<div><b>{{ u.full_name }}</b><small>@{{ u.username }}</small></div></div></td>
-          <td>{{ u.email }}</td>
+          <td><div class="person">{{ avatar(u.full_name, u.id, color=u.avatar_color) }}<div><b>{{ u.full_name }}</b><small>@{{ u.username }}</small></div></div></td>
+          <td>{{ u.email }}{% if u.is_pending %} <span class="pill pill-warn">Invited</span>{% endif %}</td>
           <td>{{ u.created_at|date }}</td>
           <td>{{ u.last_login_at|datetime }}</td>
           <td class="right">
@@ -50,5 +51,6 @@
   {% endif %}
 </section>
 
+{% include "_notice_manager.html" %}
 {% include "_password_card.html" %}
 {% endblock %}

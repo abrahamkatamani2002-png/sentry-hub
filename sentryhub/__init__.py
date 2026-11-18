@@ -1,11 +1,13 @@
 """Sentry Hub - role-based login system with emailed one-time codes."""
 import logging
-import secrets
 from datetime import timedelta
 
-from flask import Flask, abort, g, redirect, render_template, request, session, url_for
+from flask import Flask, abort, g, render_template, request, session
+from werkzeug.middleware.proxy_fix import ProxyFix
 
-from . import auth, config, dash, db, formatting, security
+from . import auth, config, dash, db, formatting, notices, security
+
+NO_STORE = ("auth.verify", "auth.login", "auth.set_password", "auth.forgot")
 
 
 def create_app(overrides=None):
@@ -14,6 +16,9 @@ def create_app(overrides=None):
     config.validate(app.config)
 
     production = app.config["ENV"] == "production"
+    if production:
+        # Vercel terminates HTTPS in front of the app; trust its forwarded host/protocol headers.
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
     app.secret_key = app.config["SECRET_KEY"]
     app.permanent_session_lifetime = timedelta(hours=app.config["SESSION_HOURS"])
     app.config.update(
@@ -27,6 +32,7 @@ def create_app(overrides=None):
     app.register_blueprint(auth.bp)
     app.register_blueprint(dash.bp)
     app.register_blueprint(dash.api)
+    app.register_blueprint(notices.bp)
     app.teardown_appcontext(db.close_db)
 
     app.jinja_env.filters["date"] = formatting.fmt_date
@@ -65,7 +71,7 @@ def create_app(overrides=None):
             "default-src 'self'; img-src 'self' data:; style-src 'self' https://fonts.googleapis.com; "
             "font-src https://fonts.gstatic.com; script-src 'self'; frame-ancestors 'none'; form-action 'self'",
         )
-        if g.get("user") or request.endpoint in ("auth.verify", "auth.login"):
+        if g.get("user") or request.endpoint in NO_STORE:
             resp.headers["Cache-Control"] = "no-store"
         if production:
             resp.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
