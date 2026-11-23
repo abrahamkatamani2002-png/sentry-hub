@@ -1,0 +1,48 @@
+{% extends "_auth_shell.html" %}
+{% block title %}Create account{% endblock %}
+{% block side_title %}Join Sentry Hub.{% endblock %}
+{% block side_text %}Create your account. We'll email your sign-in codes to the address you give us, so use one you can open.{% endblock %}
+{% block auth_content %}
+<h1>Create your account</h1>
+<p class="muted">It only takes a minute.</p>
+
+{% if errors %}
+<div class="alert alert-error" role="alert">
+  <ul>{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul>
+</div>
+{% endif %}
+
+<form method="post" action="{{ url_for('auth.register') }}" class="form" novalidate>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <label class="field">
+    <span>Full name</span>
+    <input type="text" name="full_name" value="{{ form.full_name }}" autocomplete="name" required autofocus>
+  </label>
+  <div class="field-row">
+    <label class="field">
+      <span>Username</span>
+      <input type="text" name="username" value="{{ form.username }}" autocomplete="username" autocapitalize="none" required>
+    </label>
+    <label class="field">
+      <span>Email</span>
+      <input type="email" name="email" value="{{ form.email }}" autocomplete="email" required>
+    </label>
+  </div>
+  <label class="field">
+    <span>Password</span>
+    <div class="pw">
+      <input type="password" name="password" autocomplete="new-password" required minlength="10" data-strength-input>
+      <button type="button" class="pw-toggle" data-toggle-password aria-label="Show password">Show</button>
+    </div>
+    <div class="meter" aria-hidden="true"><i data-strength-bar></i></div>
+    <small class="hint" data-strength-text>At least 10 characters, with a letter and a number.</small>
+  </label>
+  <label class="field">
+    <span>Confirm password</span>
+    <input type="password" name="confirm" autocomplete="new-password" required>
+  </label>
+  <button class="btn btn-primary btn-block" type="submit">Create account</button>
+</form>
+
+<p class="auth-switch">Already registered? <a href="{{ url_for('auth.login') }}">Sign in</a></p>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% from "_macros.html" import logo %}
+{% block body_class %}auth-page{% endblock %}
+{% block body %}
+<main class="auth">
+  <aside class="auth-side">
+    <div class="hero-glow hero-glow-a"></div>
+    <div class="hero-glow hero-glow-b"></div>
+    <a class="brand" href="{{ url_for('auth.landing') }}">{{ logo(38) }}<span>Sentry Hub</span></a>
+    <div class="auth-side-copy">
+      <h2>{% block side_title %}Secure access, made simple.{% endblock %}</h2>
+      <p>{% block side_text %}One account, the right level of access, and a code to prove it's you.{% endblock %}</p>
+      <ul class="trust trust-col">
+        <li>Salted &amp; peppered passwords</li>
+        <li>One-time email codes</li>
+        <li>Role-based dashboards</li>
+      </ul>
+    </div>
+    <small class="auth-side-foot">© Sentry Hub</small>
+  </aside>
+
+  <section class="auth-main">
+    <a class="back-link" href="{{ url_for('auth.landing') }}">← Back to home</a>
+    <div class="auth-card">
+      {% block auth_content %}{% endblock %}
+    </div>
+  </section>
+</main>
+{% endblock %}

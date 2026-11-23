@@ -1,0 +1,44 @@
+{% extends "dash_base.html" %}
+{% block title %}Activity log{% endblock %}
+{% block heading %}Activity log{% endblock %}
+{% block subheading %}The latest 200 events across Sentry Hub{% endblock %}
+{% block nav %}{% with active = 'activity' %}{% include "_nav_admin.html" %}{% endwith %}{% endblock %}
+{% block content %}
+<section class="panel">
+  <div class="panel-head panel-head-row">
+    <div>
+      <h2>Who did what</h2>
+      <p>Sign-ins, member changes, backups and announcements. Times are in UTC.</p>
+    </div>
+  </div>
+  <div class="toolbar toolbar-left">
+    <div class="seg" role="tablist" aria-label="Filter events">
+      <button type="button" class="seg-btn active" data-status-filter="all">All</button>
+      {% for key, label in categories %}<button type="button" class="seg-btn" data-status-filter="{{ key }}">{{ label }}</button>{% endfor %}
+    </div>
+    <input class="search" type="search" placeholder="Search the log…" data-filter-input="activity-table" aria-label="Search the log">
+  </div>
+
+  {% if events %}
+  <div class="table-wrap">
+    <table class="table" id="activity-table">
+      <thead><tr><th>When</th><th>Event</th><th>By</th><th>Member</th><th>Details</th></tr></thead>
+      <tbody>
+      {% for e in events %}
+        <tr data-status="{{ e.category }}" data-search="{{ (e.label ~ ' ' ~ e.actor_name ~ ' ' ~ (e.target_name or '') ~ ' ' ~ (e.detail or ''))|lower }}">
+          <td class="nowrap">{{ e.created_at|datetime }}</td>
+          <td><span class="pill pill-cat-{{ e.category }}">{{ e.label }}</span></td>
+          <td>@{{ e.actor_name }}</td>
+          <td>{% if e.target_name %}@{{ e.target_name }}{% else %}—{% endif %}</td>
+          <td class="muted">{{ e.detail or '' }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="empty" data-empty hidden>No events match your filters.</p>
+  {% else %}
+  <div class="empty-state"><div>🧾</div><h3>No activity yet</h3><p>Events appear here as people sign in and as you manage members.</p></div>
+  {% endif %}
+</section>
+{% endblock %}

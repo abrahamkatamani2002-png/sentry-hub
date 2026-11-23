@@ -1,0 +1,29 @@
+{% from "_notices.html" import notice with context %}
+<section class="panel" id="notices">
+  <div class="panel-head">
+    <h2>Notice board</h2>
+    <p>Announcements you post appear on every member's dashboard.</p>
+  </div>
+
+  <form method="post" action="{{ url_for('notices.create') }}" class="form notice-form" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label class="field"><span>Title</span>
+      <input type="text" name="title" maxlength="80" placeholder="e.g. Office closed on Friday" required></label>
+    <label class="field"><span>Message</span>
+      <textarea name="body" rows="3" maxlength="600" placeholder="Write your announcement…" required></textarea></label>
+    <div class="form-actions">
+      <label class="check"><input type="checkbox" name="pinned"> Pin to the top</label>
+      <button class="btn btn-primary" type="submit">Post announcement</button>
+    </div>
+  </form>
+
+  {% if notices %}
+  <div class="notice-list">
+    {% for n in notices %}
+      {{ notice(n, manage=(current_user.role == 'admin' or n.author_id == current_user.id)) }}
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state"><div>📣</div><h3>Nothing posted yet</h3><p>Your first announcement will appear here and on every member's dashboard.</p></div>
+  {% endif %}
+</section>

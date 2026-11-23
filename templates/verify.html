@@ -1,0 +1,28 @@
+{% extends "_auth_shell.html" %}
+{% block title %}Check your email{% endblock %}
+{% block side_title %}One more step.{% endblock %}
+{% block side_text %}We sent a 6-digit code to your email so we know it's really you.{% endblock %}
+{% block auth_content %}
+<h1>Check your email</h1>
+<p class="muted">Step 2 of 2 · We sent a 6-digit code to <strong>{{ email }}</strong></p>
+
+{% if error %}<div class="alert alert-error" role="alert">{{ error }}</div>{% endif %}
+
+<form method="post" action="{{ url_for('auth.verify') }}" class="form" novalidate>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <label class="field">
+    <span>Verification code</span>
+    <input class="code-input" type="text" name="code" inputmode="numeric" pattern="[0-9]*" maxlength="7"
+           autocomplete="one-time-code" placeholder="000 000" required autofocus data-code-input>
+  </label>
+  <button class="btn btn-primary btn-block" type="submit">Verify and sign in</button>
+</form>
+
+<form method="post" action="{{ url_for('auth.resend') }}" class="resend">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <span class="muted">Didn't get it?</span>
+  <button class="link-btn" type="submit" data-resend data-wait="{{ wait }}">Resend code</button>
+</form>
+
+<p class="auth-switch"><a href="{{ url_for('auth.login') }}">Use a different account</a></p>
+{% endblock %}

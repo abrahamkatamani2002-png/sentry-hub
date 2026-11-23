@@ -1,0 +1,46 @@
+{% extends "dash_base.html" %}
+{% from "_macros.html" import avatar, role_pill %}
+{% block title %}Deleted members{% endblock %}
+{% block heading %}Deleted members{% endblock %}
+{% block subheading %}Nothing is lost. Restore anyone, any time{% endblock %}
+{% block nav %}{% with active = 'bin' %}{% include "_nav_admin.html" %}{% endwith %}{% endblock %}
+{% block content %}
+<section class="panel">
+  <div class="panel-head panel-head-row">
+    <div>
+      <h2>{{ members|length }} deleted {{ 'member' if members|length == 1 else 'members' }}</h2>
+      <p>Deleted members can't sign in. Restoring brings the account back exactly as it was, with the same role and details.</p>
+    </div>
+    {% if members %}<input class="search" type="search" placeholder="Search deleted members…" data-filter-input="bin-table" aria-label="Search deleted members">{% endif %}
+  </div>
+
+  {% if members %}
+  <div class="table-wrap">
+    <table class="table" id="bin-table">
+      <thead><tr><th>Member</th><th>Email</th><th>Role</th><th>Deleted by</th><th>Deleted on</th><th class="right">Action</th></tr></thead>
+      <tbody>
+      {% for u in members %}
+        <tr data-search="{{ (u.full_name ~ ' ' ~ u.username ~ ' ' ~ u.email ~ ' ' ~ u.role)|lower }}">
+          <td><div class="person">{{ avatar(u.full_name, u.id, color=u.avatar_color) }}<div><b>{{ u.full_name }}</b><small>@{{ u.username }}</small></div></div></td>
+          <td>{{ u.email }}</td>
+          <td>{{ role_pill(u.role) }}</td>
+          <td>{% if u.deleted_by_name %}@{{ u.deleted_by_name }}{% else %}—{% endif %}</td>
+          <td>{{ u.deleted_at|datetime }}</td>
+          <td class="right">
+            <form method="post" action="{{ url_for('dash.admin_restore', user_id=u.id) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="from" value="bin">
+              <button class="btn btn-success btn-sm" type="submit">Restore</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="empty" data-empty hidden>No deleted members match your search.</p>
+  {% else %}
+  <div class="empty-state"><div>🗑️</div><h3>The bin is empty</h3><p>Members you or your staff delete will be kept here until you restore them.</p></div>
+  {% endif %}
+</section>
+{% endblock %}
