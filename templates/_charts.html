@@ -1,0 +1,38 @@
+{# Charts are plain inline SVG: no scripts or style attributes, so they work with the strict CSP. #}
+{% macro bars(series, tone="green") %}
+<svg class="chart chart-{{ tone }}" viewBox="0 0 420 150" role="img" aria-label="Bar chart for the last 7 days, {{ series.total }} in total">
+  <line class="chart-base" x1="0" y1="120" x2="420" y2="120"/>
+  {% for b in series.bars %}
+  <rect class="bar{{ ' today' if b.today }}" x="{{ b.x }}" y="{{ b.y }}" width="{{ b.w }}" height="{{ b.h }}" rx="6"/>
+  {% if b.n %}<text class="chart-val" x="{{ b.cx }}" y="{{ b.y - 7 }}" text-anchor="middle">{{ b.n }}</text>{% endif %}
+  <text class="chart-day" x="{{ b.cx }}" y="143" text-anchor="middle">{{ b.label }}</text>
+  {% endfor %}
+</svg>
+{% endmacro %}
+
+{% macro donut(d) %}
+<div class="donut">
+  <svg viewBox="0 0 42 42" width="150" height="150" role="img" aria-label="Members by role">
+    <circle class="donut-bg" cx="21" cy="21" r="15.9155" fill="none" stroke-width="6"/>
+    {% for s in d.segments if s.n %}
+    <circle cx="21" cy="21" r="15.9155" fill="none" stroke-width="6" stroke="{{ s.colour }}"
+            stroke-dasharray="{{ s.pct }} {{ s.gap }}" stroke-dashoffset="{{ s.offset }}" transform="rotate(-90 21 21)"/>
+    {% endfor %}
+  </svg>
+  <div class="donut-mid"><b>{{ d.total }}</b><small>members</small></div>
+</div>
+<ul class="legend">
+  {% for s in d.segments %}
+  <li><span class="legend-dot legend-{{ s.role }}"></span><span>{{ s.role|capitalize }}</span><b>{{ s.n }}</b></li>
+  {% endfor %}
+</ul>
+{% endmacro %}
+
+{% macro stat(icon, label, value, tone="green", note="") %}
+<div class="stat stat-{{ tone }}">
+  <span class="stat-ic" aria-hidden="true">{{ icon }}</span>
+  <small>{{ label }}</small>
+  <b data-count="{{ value }}">{{ value }}</b>
+  {% if note %}<em class="stat-note">{{ note }}</em>{% endif %}
+</div>
+{% endmacro %}

@@ -8,14 +8,45 @@
 <a href="#notices"><span>📣</span> Notice board</a>
 <a href="#password"><span>🔑</span> Password</a>
 {% endblock %}
+{% from "_charts.html" import bars, stat %}
 {% block content %}
-<div class="grid grid-3 stat-grid">
-  <div class="stat stat-teal"><small>Active users</small><b>{{ users|length }}</b></div>
-  <div class="stat"><small>Your role</small><b>Staff</b></div>
-  <div class="stat"><small>Can delete</small><b>Users only</b></div>
+<section class="banner">
+  <div class="banner-copy">
+    <span class="banner-eyebrow">Staff desk</span>
+    <h2><span data-greeting>Hello</span>, {{ current_user.full_name.split()[0] }} 👋</h2>
+    <p>{{ stats.total }} active user{{ '' if stats.total == 1 else 's' }}{% if stats.new_week %}, {{ stats.new_week }} joined this week{% endif %}. Keep the team informed and the user list tidy.</p>
+  </div>
+  <div class="quick">
+    <a class="quick-tile" href="#users"><span>👥</span>Users</a>
+    <a class="quick-tile" href="#notices"><span>📣</span>Post notice</a>
+    <a class="quick-tile" href="#password"><span>🔑</span>Password</a>
+  </div>
+</section>
+
+<div class="grid grid-auto stat-grid">
+  {{ stat("👥", "Active users", stats.total, "teal") }}
+  {{ stat("🌱", "New this week", stats.new_week, "indigo") }}
+  {{ stat("✉️", "Invited", stats.pending, "amber", "awaiting password") }}
+  {{ stat("🗑️", "Deleted by you", stats.deleted_by_me, "red", "admins can restore") }}
 </div>
 
-<section class="panel">
+<div class="two-col two-col-even">
+  <section class="panel">
+    <div class="panel-head"><h2>New users this week</h2><p>{{ signups.total }} account{{ '' if signups.total == 1 else 's' }} created in the last 7 days.</p></div>
+    {{ bars(signups) }}
+  </section>
+  <section class="panel">
+    <div class="panel-head"><h2>Staff guide</h2><p>What you can do from here.</p></div>
+    <ul class="check-list">
+      <li>See every active user and when they last signed in</li>
+      <li>Delete a user. They lose access at once</li>
+      <li>Admins can restore anyone you delete</li>
+      <li>Post announcements everyone sees on their dashboard</li>
+    </ul>
+  </section>
+</div>
+
+<section class="panel" id="users">
   <div class="panel-head panel-head-row">
     <div><h2>Active users</h2><p>Deleted accounts disappear from this list. An administrator can restore them.</p></div>
     <input class="search" type="search" placeholder="Search users…" data-filter-input="staff-table" aria-label="Search users">

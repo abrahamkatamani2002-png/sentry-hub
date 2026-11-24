@@ -1,6 +1,7 @@
 {% extends "dash_base.html" %}
 {% from "_macros.html" import avatar, role_pill %}
 {% from "_notices.html" import notice with context %}
+{% from "_charts.html" import stat %}
 {% block title %}My account{% endblock %}
 {% block heading %}<span data-greeting>Hello</span>, {{ current_user.full_name.split()[0] }} 👋{% endblock %}
 {% block subheading %}Here's what's happening with your account{% endblock %}
@@ -23,10 +24,18 @@
   </div>
 </section>
 
-<div class="grid grid-3 stat-grid">
-  <div class="stat stat-indigo"><small>Member since</small><b>{{ current_user.created_at|date }}</b></div>
-  <div class="stat stat-teal"><small>Your journey</small><b>Day {{ days }}</b></div>
-  <div class="stat stat-blue"><small>Last sign-in</small><b class="stat-sm">{{ current_user.last_login_at|datetime }}</b></div>
+<div class="quick quick-inline">
+  <a class="quick-tile quick-light" href="#profile"><span>✏️</span>Edit profile</a>
+  <a class="quick-tile quick-light" href="#notices"><span>📣</span>Notices{% if notices %} ({{ notices|length }}){% endif %}</a>
+  <a class="quick-tile quick-light" href="#password"><span>🔑</span>Password</a>
+  <a class="quick-tile quick-light" href="#signins"><span>💻</span>Sign-ins</a>
+</div>
+
+<div class="grid grid-auto stat-grid">
+  {{ stat("🗓️", "Member since", current_user.created_at|date, "indigo") }}
+  {{ stat("🚀", "Your journey (days)", days, "teal") }}
+  {{ stat("🛡️", "Account health", health.score, "blue", health.level) }}
+  {{ stat("📣", "Notices", notices|length, "amber", "on the board") }}
 </div>
 
 <div class="two-col">
@@ -37,7 +46,7 @@
         <svg viewBox="0 0 120 120" width="132" height="132" aria-hidden="true">
           <defs>
             <linearGradient id="ringgrad" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" stop-color="#6366f1"/><stop offset="1" stop-color="#14b8a6"/>
+              <stop offset="0" stop-color="#059669"/><stop offset="1" stop-color="#34d399"/>
             </linearGradient>
           </defs>
           <circle class="ring-bg" cx="60" cy="60" r="52" fill="none" stroke-width="12"/>

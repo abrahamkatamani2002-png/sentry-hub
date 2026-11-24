@@ -4,13 +4,82 @@
 {% block heading %}Admin dashboard{% endblock %}
 {% block subheading %}Members, roles, notices and backups{% endblock %}
 {% block nav %}{% with active = 'overview' %}{% include "_nav_admin.html" %}{% endwith %}{% endblock %}
+{% from "_charts.html" import bars, donut, stat %}
 {% block content %}
+<section class="banner">
+  <div class="banner-copy">
+    <span class="banner-eyebrow">Admin control room</span>
+    <h2><span data-greeting>Hello</span>, {{ current_user.full_name.split()[0] }} 👋</h2>
+    <p>{{ stats.active }} active member{{ '' if stats.active == 1 else 's' }}{% if stats.pending %}, {{ stats.pending }} waiting to accept an invite{% endif %}{% if stats.deleted %}, {{ stats.deleted }} in the bin{% endif %}. Here's your organisation at a glance.</p>
+  </div>
+  <div class="quick">
+    <a class="quick-tile" href="{{ url_for('dash.admin_new_member') }}"><span>➕</span>Add member</a>
+    <a class="quick-tile" href="#notices"><span>📣</span>Post notice</a>
+    <a class="quick-tile" href="#backups"><span>☁️</span>Backup</a>
+    <a class="quick-tile" href="{{ url_for('dash.admin_activity') }}"><span>🧾</span>Activity</a>
+    <a class="quick-tile" href="{{ url_for('dash.admin_deleted') }}"><span>🗑️</span>Bin</a>
+  </div>
+</section>
+
 <div class="grid grid-auto stat-grid">
-  <div class="stat stat-indigo"><small>Total accounts</small><b>{{ stats.total }}</b></div>
-  <div class="stat stat-blue"><small>Active</small><b>{{ stats.active }}</b></div>
-  <div class="stat stat-teal"><small>Staff</small><b>{{ stats.staff }}</b></div>
-  <div class="stat stat-amber"><small>Invited</small><b>{{ stats.pending }}</b></div>
-  <div class="stat stat-red"><small>Deleted</small><b>{{ stats.deleted }}</b></div>
+  {{ stat("👥", "Total accounts", stats.total, "indigo", "+" ~ stats.new_week ~ " this week") }}
+  {{ stat("✅", "Active", stats.active, "blue") }}
+  {{ stat("🧑‍💼", "Staff", stats.staff, "teal") }}
+  {{ stat("✉️", "Invited", stats.pending, "amber", "awaiting password") }}
+  {{ stat("🗑️", "Deleted", stats.deleted, "red", "can be restored") }}
+</div>
+
+<div class="two-col two-col-even">
+  <section class="panel">
+    <div class="panel-head"><h2>Sign-ins this week</h2><p>{{ signins.total }} successful sign-in{{ '' if signins.total == 1 else 's' }} in the last 7 days. Today is highlighted.</p></div>
+    {{ bars(signins) }}
+  </section>
+  <section class="panel">
+    <div class="panel-head"><h2>Members by role</h2><p>Active and invited accounts. Deleted accounts are not counted.</p></div>
+    <div class="donut-wrap">{{ donut(roles_chart) }}</div>
+  </section>
+</div>
+
+<div class="two-col two-col-even">
+  <section class="panel">
+    <div class="panel-head panel-head-row">
+      <div><h2>Recent activity</h2><p>The latest things that happened.</p></div>
+      <a class="btn btn-soft btn-sm" href="{{ url_for('dash.admin_activity') }}">View all</a>
+    </div>
+    {% if feed %}
+    <ul class="feed">
+      {% for e in feed %}
+      <li>
+        <span class="feed-dot feed-{{ e.category }}"></span>
+        <div><b>{{ e.label }}</b><small>{{ e.actor_name }}{% if e.target_name %} → {{ e.target_name }}{% endif %} · {{ e.created_at|datetime }}</small></div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <div class="empty-state"><div>🧾</div><h3>Nothing yet</h3><p>Activity will show up here.</p></div>
+    {% endif %}
+  </section>
+
+  <section class="panel" id="backups">
+    <div class="panel-head">
+      <h2>Backup</h2>
+      <p>Encrypted snapshot of all accounts. Runs automatically every day; the latest 30 are kept.</p>
+    </div>
+    <div class="backup-status backup-status-col">
+      <div><small>Last successful backup</small><b id="backup-last">{% if last_ok %}{{ last_ok.created_at|datetime }}{% else %}Never{% endif %}</b></div>
+      <div><small>Latest attempt</small>
+        <b>{% if last_backup %}{{ last_backup.created_at|datetime }} · {{ last_backup.triggered_by }}
+          {% if last_backup.status == 'success' %}<span class="pill pill-ok">Successful</span>{% else %}<span class="pill pill-deleted">Failed</span>{% endif %}
+        {% else %}—{% endif %}
+          {% if last_backup and last_backup.status == 'success' and last_backup.data %}<a class="link" href="{{ url_for('dash.admin_backup_download', backup_id=last_backup.id) }}">Download</a>{% endif %}</b>
+        {% if last_backup and last_backup.status != 'success' and last_backup.detail %}<small class="err-detail">{{ last_backup.detail }}</small>{% endif %}
+      </div>
+    </div>
+    <button class="btn btn-primary btn-block btn-spaced" type="button" id="backup-btn" data-url="{{ url_for('dash.admin_backup') }}">
+      <span class="btn-label">Back up now</span>
+      <span class="spinner" hidden></span>
+    </button>
+  </section>
 </div>
 
 <section class="panel" id="accounts">
@@ -103,29 +172,6 @@
     </table>
   </div>
   <p class="empty" data-empty hidden>No members match your filters.</p>
-</section>
-
-<section class="panel" id="backups">
-  <div class="panel-head panel-head-row">
-    <div>
-      <h2>Backup</h2>
-      <p>Encrypted snapshot of all accounts. Runs automatically every day; the latest 30 are kept.</p>
-    </div>
-    <button class="btn btn-primary" type="button" id="backup-btn" data-url="{{ url_for('dash.admin_backup') }}">
-      <span class="btn-label">Back up now</span>
-      <span class="spinner" hidden></span>
-    </button>
-  </div>
-  <div class="backup-status">
-    <div><small>Last successful backup</small><b id="backup-last">{% if last_ok %}{{ last_ok.created_at|datetime }}{% else %}Never{% endif %}</b></div>
-    <div><small>Latest attempt</small>
-      <b>{% if last_backup %}{{ last_backup.created_at|datetime }} · {{ last_backup.triggered_by }}
-        {% if last_backup.status == 'success' %}<span class="pill pill-ok">Successful</span>{% else %}<span class="pill pill-deleted">Failed</span>{% endif %}
-      {% else %}—{% endif %}
-        {% if last_backup and last_backup.status == 'success' and last_backup.data %}<a class="link" href="{{ url_for('dash.admin_backup_download', backup_id=last_backup.id) }}">Download</a>{% endif %}</b>
-      {% if last_backup and last_backup.status != 'success' and last_backup.detail %}<small class="err-detail">{{ last_backup.detail }}</small>{% endif %}
-    </div>
-  </div>
 </section>
 
 {% include "_notice_manager.html" %}

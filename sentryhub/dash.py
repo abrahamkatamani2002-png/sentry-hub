@@ -135,7 +135,12 @@ def staff():
         "WHERE role = %s AND is_deleted = %s ORDER BY created_at DESC",
         (USER, False),
     )
-    return render_template("dash_staff.html", users=users, notices=notices.list_all(conn))
+    now = int(time.time())
+    signups = _day_series([u["created_at"] for u in users], now=now)
+    mine = conn.one("SELECT COUNT(*) AS n FROM activity_log WHERE action = %s AND actor_id = %s", ("member_deleted", g.user["id"]))["n"]
+    stats = {"total": len(users), "new_week": sum(1 for u in users if u["created_at"] >= now - 7 * 86400),
+             "pending": sum(1 for u in users if u["is_pending"]), "deleted_by_me": mine}
+    return render_template("dash_staff.html", users=users, notices=notices.list_all(conn), signups=signups, stats=stats)
 
 
 @bp.post("/staff/users/<int:user_id>/delete")
@@ -163,6 +168,48 @@ def _counts(conn):
     }
 
 
+# --- chart data (drawn as inline SVG, so no scripts or styles are needed) --------------------
+
+ROLE_COLOURS = {ADMIN: "#f5b82e", STAFF: "#10b981", USER: "#2563eb"}
+
+
+def _day_series(timestamps, days=7, now=None):
+    """Count events per UTC day for the last `days` days, with bar geometry for a 420x150 SVG."""
+    from datetime import datetime, timedelta, timezone
+    today = datetime.fromtimestamp(now or time.time(), timezone.utc).date()
+    keys = [today - timedelta(days=i) for i in range(days - 1, -1, -1)]
+    counts = {k: 0 for k in keys}
+    for ts in timestamps:
+        d = datetime.fromtimestamp(int(ts), timezone.utc).date()
+        if d in counts:
+            counts[d] += 1
+    peak = max(max(counts.values()), 1)
+    slot = 420 / days
+    bars = []
+    for i, k in enumerate(keys):
+        n = counts[k]
+        h = round(104 * n / peak, 1) if n else 2
+        bars.append({
+            "label": k.strftime("%a"), "n": n, "h": h, "y": round(120 - h, 1),
+            "x": round(i * slot + slot * 0.2, 1), "w": round(slot * 0.6, 1), "cx": round(i * slot + slot / 2, 1),
+            "today": k == today,
+        })
+    return {"bars": bars, "total": sum(counts.values()), "peak": peak}
+
+
+def _role_donut(users):
+    live = [u for u in users if not u["is_deleted"]]
+    total = len(live)
+    segments, offset = [], 0.0
+    for role in (ADMIN, STAFF, USER):
+        n = sum(1 for u in live if u["role"] == role)
+        pct = round(100 * n / total, 2) if total else 0
+        segments.append({"role": role, "n": n, "pct": pct, "gap": round(100 - pct, 2), "offset": round(-offset, 2),
+                         "colour": ROLE_COLOURS[role]})
+        offset += pct
+    return {"segments": segments, "total": total}
+
+
 @bp.route("/admin")
 @role_required(ADMIN)
 def admin():
@@ -180,9 +227,16 @@ def admin():
     }
     last = conn.one("SELECT * FROM backups ORDER BY id DESC LIMIT 1")
     last_ok = conn.one("SELECT created_at FROM backups WHERE status = %s ORDER BY id DESC LIMIT 1", ("success",))
+    week_ago = int(time.time()) - 7 * 86400
+    stats["new_week"] = sum(1 for u in users if u["created_at"] >= week_ago)
+    signins = _day_series([r["created_at"] for r in conn.all(
+        "SELECT created_at FROM activity_log WHERE action = %s AND created_at >= %s", ("login", week_ago - 86400))])
+    feed = conn.all("SELECT * FROM activity_log ORDER BY id DESC LIMIT 7")
+    for event in feed:
+        event["label"], event["category"] = activity.describe(event["action"])
     return render_template(
         "dash_admin.html", users=users, stats=stats, counts=_counts(conn), last_backup=last, last_ok=last_ok,
-        assignable=ASSIGNABLE, notices=notices.list_all(conn),
+        assignable=ASSIGNABLE, notices=notices.list_all(conn), signins=signins, roles_chart=_role_donut(users), feed=feed,
     )
 
 

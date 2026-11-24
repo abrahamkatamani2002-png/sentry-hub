@@ -145,6 +145,21 @@
     el.textContent = h < 5 ? "Hello" : h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
   });
 
+  /* ---- count-up numbers on stat cards ---- */
+  $$("[data-count]").forEach(function (el) {
+    var end = el.dataset.count;
+    if (!/^\d+$/.test(end) || parseInt(end, 10) === 0) return;
+    var target = parseInt(end, 10), start = null;
+    if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    function step(ts) {
+      if (start === null) start = ts;
+      var p = Math.min((ts - start) / 800, 1);
+      el.textContent = Math.round(target * (1 - Math.pow(1 - p, 3)));
+      if (p < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  });
+
   /* ---- reveal the full salt / hash on click ---- */
   $$("code.secret").forEach(function (el) {
     var short = el.textContent;
