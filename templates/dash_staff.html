@@ -4,9 +4,9 @@
 {% block heading %}Staff dashboard{% endblock %}
 {% block subheading %}Manage active users and keep everyone informed{% endblock %}
 {% block nav %}
-<a class="active" href="{{ url_for('dash.staff') }}"><span>👥</span> Users</a>
-<a href="#notices"><span>📣</span> Notice board</a>
-<a href="#password"><span>🔑</span> Password</a>
+<a class="active" href="{{ url_for('dash.staff') }}" title="Users"><span>👥</span> Users</a>
+<a href="#notices" title="Notice board"><span>📣</span> Notice board</a>
+<a href="#password" title="Password"><span>🔑</span> Password</a>
 {% endblock %}
 {% from "_charts.html" import bars, stat %}
 {% block content %}

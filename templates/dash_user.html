@@ -6,11 +6,11 @@
 {% block heading %}<span data-greeting>Hello</span>, {{ current_user.full_name.split()[0] }} 👋{% endblock %}
 {% block subheading %}Here's what's happening with your account{% endblock %}
 {% block nav %}
-<a class="active" href="{{ url_for('dash.overview') }}"><span>🏠</span> My account</a>
-<a href="#health"><span>🛡️</span> Account health</a>
-<a href="#notices"><span>📣</span> Notice board</a>
-<a href="#profile"><span>✏️</span> Edit profile</a>
-<a href="#password"><span>🔑</span> Password</a>
+<a class="active" href="{{ url_for('dash.overview') }}" title="My account"><span>🏠</span> My account</a>
+<a href="#health" title="Account health"><span>🛡️</span> Account health</a>
+<a href="#notices" title="Notice board"><span>📣</span> Notice board</a>
+<a href="#profile" title="Edit profile"><span>✏️</span> Edit profile</a>
+<a href="#password" title="Password"><span>🔑</span> Password</a>
 {% endblock %}
 {% block content %}
 <section class="profile-hero">

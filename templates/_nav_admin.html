@@ -1,8 +1,8 @@
-<a class="{{ 'active' if active == 'overview' }}" href="{{ url_for('dash.admin') }}"><span>📊</span> Overview</a>
-<a href="{{ url_for('dash.admin') }}#accounts"><span>👥</span> Members{% if counts.pending %}<em class="nav-badge">{{ counts.pending }} invited</em>{% endif %}</a>
-<a class="{{ 'active' if active == 'new' }}" href="{{ url_for('dash.admin_new_member') }}"><span>➕</span> Add member</a>
-<a class="{{ 'active' if active == 'bin' }}" href="{{ url_for('dash.admin_deleted') }}"><span>🗑️</span> Deleted members{% if counts.deleted %}<em class="nav-badge">{{ counts.deleted }}</em>{% endif %}</a>
-<a class="{{ 'active' if active == 'activity' }}" href="{{ url_for('dash.admin_activity') }}"><span>🧾</span> Activity log</a>
-<a href="{{ url_for('dash.admin') }}#notices"><span>📣</span> Notice board</a>
-<a href="{{ url_for('dash.admin') }}#backups"><span>☁️</span> Backups</a>
-<a href="{{ url_for('dash.admin') }}#password"><span>🔑</span> Password</a>
+<a class="{{ 'active' if active == 'overview' }}" href="{{ url_for('dash.admin') }}" title="Overview"><span>📊</span> Overview</a>
+<a href="{{ url_for('dash.admin') }}#accounts" title="Members"><span>👥</span> Members{% if counts.pending %}<em class="nav-badge">{{ counts.pending }} invited</em>{% endif %}</a>
+<a class="{{ 'active' if active == 'new' }}" href="{{ url_for('dash.admin_new_member') }}" title="Add member"><span>➕</span> Add member</a>
+<a class="{{ 'active' if active == 'bin' }}" href="{{ url_for('dash.admin_deleted') }}" title="Deleted members"><span>🗑️</span> Deleted members{% if counts.deleted %}<em class="nav-badge">{{ counts.deleted }}</em>{% endif %}</a>
+<a class="{{ 'active' if active == 'activity' }}" href="{{ url_for('dash.admin_activity') }}" title="Activity log"><span>🧾</span> Activity log</a>
+<a href="{{ url_for('dash.admin') }}#notices" title="Notice board"><span>📣</span> Notice board</a>
+<a href="{{ url_for('dash.admin') }}#backups" title="Backups"><span>☁️</span> Backups</a>
+<a href="{{ url_for('dash.admin') }}#password" title="Password"><span>🔑</span> Password</a>
