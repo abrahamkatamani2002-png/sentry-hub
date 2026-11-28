@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_macros.html" import logo, role_pill, avatar %}
+{% from "_macros.html" import logo, role_pill, avatar, theme_toggle %}
 {% block body_class %}app{% endblock %}
 {% block body %}
 <div class="shell">
@@ -20,7 +20,7 @@
       </div>
       <form method="post" action="{{ url_for('auth.logout') }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button class="btn btn-ghost-light btn-block" type="submit">Sign out</button>
+        <button class="btn btn-ghost-light btn-block signout" type="submit" title="Sign out"><span class="so-ic" aria-hidden="true">⏻</span><span class="so-txt">Sign out</span></button>
       </form>
     </div>
   </aside>
@@ -29,17 +29,24 @@
     <header class="topbar">
       <button class="menu-btn" type="button" data-menu aria-label="Open menu">☰</button>
       <div class="topbar-title">
+        <nav class="crumbs" aria-label="Breadcrumb"><a href="{{ url_for('auth.landing') }}">Sentry Hub</a><i>›</i><span>{{ current_user.role|capitalize }}</span><i>›</i><span class="crumb-now">{% block crumb %}{{ self.heading() }}{% endblock %}</span></nav>
         <h1>{% block heading %}Dashboard{% endblock %}</h1>
         <p>{% block subheading %}{% endblock %}</p>
       </div>
       <div class="topbar-right">
+        <span class="status-chip" title="A one-time code is emailed at every sign-in"><i></i>Two-step sign-in on</span>
+        {{ theme_toggle() }}
         {{ role_pill(current_user.role) }}
         {{ avatar(current_user.full_name, current_user.id, color=current_user.avatar_color) }}
       </div>
     </header>
 
-    <main class="content">
+    <main class="content" id="main-content" tabindex="-1">
       {% block content %}{% endblock %}
+      <footer class="app-foot">
+        <span>Sentry Hub v3 · Secure access for organisations</span>
+        <span class="app-foot-keys"><kbd>/</kbd> search <kbd>D</kbd> dark mode</span>
+      </footer>
     </main>
   </div>
 </div>

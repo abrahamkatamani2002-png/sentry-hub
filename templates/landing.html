@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_macros.html" import logo %}
+{% from "_macros.html" import logo, theme_toggle %}
 {% block title %}Secure access for your organisation{% endblock %}
 {% block body_class %}public{% endblock %}
 {% block body %}
@@ -11,12 +11,13 @@
     <a href="#how">How it works</a>
   </nav>
   <div class="nav-cta">
+    {{ theme_toggle() }}
     <a class="btn btn-ghost" href="{{ url_for('auth.login') }}">Sign in</a>
     <a class="btn btn-accent" href="{{ url_for('auth.register') }}">Get started</a>
   </div>
 </header>
 
-<section class="hero hero-light">
+<section class="hero hero-light" id="main-content">
   <div class="hero-blob hero-blob-a"></div>
   <div class="hero-blob hero-blob-b"></div>
   <div class="hero-blob hero-blob-c"></div>

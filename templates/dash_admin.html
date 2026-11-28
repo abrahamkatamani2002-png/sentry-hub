@@ -102,6 +102,7 @@
     <input class="search" type="search" placeholder="Search members…" data-filter-input="admin-table" aria-label="Search members">
   </div>
 
+  <p class="result-count"><span data-result-count>{{ users|length }} results</span> · press <kbd>/</kbd> to search</p>
   <div class="table-wrap">
     <table class="table table-admin" id="admin-table">
       <thead>
@@ -113,7 +114,7 @@
         <tr class="{{ 'row-deleted' if u.is_deleted }}" data-status="{{ state }}"
             data-search="{{ (u.full_name ~ ' ' ~ u.username ~ ' ' ~ u.email ~ ' ' ~ u.role ~ ' ' ~ state)|lower }}">
           <td><div class="person">{{ avatar(u.full_name, u.id, color=u.avatar_color) }}<div><b>{{ u.full_name }}</b><small>@{{ u.username }}</small></div></div></td>
-          <td>{{ u.email }}</td>
+          <td>{{ u.email }} <button class="copy-btn" type="button" data-copy="{{ u.email }}" aria-label="Copy email">Copy</button></td>
           <td>{{ role_pill(u.role) }}</td>
           <td>
             {% if u.is_deleted %}
@@ -127,10 +128,10 @@
             {% endif %}
           </td>
           <td>{{ u.created_at|date }}</td>
-          <td><code class="secret" data-secret="{{ u.salt }}" tabindex="0" title="Click to reveal">{{ u.salt[:8] }}…</code></td>
+          <td><code class="secret" data-secret="{{ u.salt }}" tabindex="0" title="Click to reveal">{{ u.salt[:8] }}…</code> <button class="copy-btn" type="button" data-copy="{{ u.salt }}" aria-label="Copy salt">Copy</button></td>
           <td>
             {% if u.is_pending %}<small class="sub">Not set yet</small>
-            {% else %}<code class="secret" data-secret="{{ u.password_hash }}" tabindex="0" title="Click to reveal">{{ u.password_hash[:14] }}…</code>{% endif %}
+            {% else %}<code class="secret" data-secret="{{ u.password_hash }}" tabindex="0" title="Click to reveal">{{ u.password_hash[:14] }}…</code> <button class="copy-btn" type="button" data-copy="{{ u.password_hash }}" aria-label="Copy hash">Copy</button>{% endif %}
           </td>
           <td class="right">
             <div class="actions">

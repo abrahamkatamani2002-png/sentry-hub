@@ -53,6 +53,7 @@
   </div>
 
   {% if users %}
+  <p class="result-count"><span data-result-count>{{ users|length }} results</span> · press <kbd>/</kbd> to search</p>
   <div class="table-wrap">
     <table class="table" id="staff-table">
       <thead><tr><th>User</th><th>Email</th><th>Joined</th><th>Last sign-in</th><th class="right">Action</th></tr></thead>
@@ -60,7 +61,7 @@
       {% for u in users %}
         <tr data-search="{{ (u.full_name ~ ' ' ~ u.username ~ ' ' ~ u.email)|lower }}">
           <td><div class="person">{{ avatar(u.full_name, u.id, color=u.avatar_color) }}<div><b>{{ u.full_name }}</b><small>@{{ u.username }}</small></div></div></td>
-          <td>{{ u.email }}{% if u.is_pending %} <span class="pill pill-warn">Invited</span>{% endif %}</td>
+          <td>{{ u.email }} <button class="copy-btn" type="button" data-copy="{{ u.email }}" aria-label="Copy email">Copy</button>{% if u.is_pending %} <span class="pill pill-warn">Invited</span>{% endif %}</td>
           <td>{{ u.created_at|date }}</td>
           <td>{{ u.last_login_at|datetime }}</td>
           <td class="right">

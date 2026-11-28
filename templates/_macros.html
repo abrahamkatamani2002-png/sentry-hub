@@ -14,3 +14,5 @@
 
 {# `color` is the member's chosen avatar colour (0-5); without one the colour follows their id. #}
 {% macro avatar(name, uid=0, size="", color=None) %}<span class="avatar av-{{ (color if color is not none else uid) % 6 }} {{ size }}">{{ name|initials }}</span>{% endmacro %}
+
+{% macro theme_toggle() %}<button class="theme-toggle" type="button" data-theme-toggle aria-label="Change theme">🖥️</button>{% endmacro %}

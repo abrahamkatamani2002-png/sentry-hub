@@ -123,6 +123,8 @@
       row.hidden = !ok;
       if (ok) shown++;
     });
+    var count = panel.querySelector("[data-result-count]");
+    if (count) count.textContent = shown + (shown === 1 ? " result" : " results");
     var empty = panel.querySelector("[data-empty]");
     if (empty) empty.hidden = shown !== 0;
   }
@@ -170,6 +172,39 @@
     }
     el.addEventListener("click", toggle);
     el.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } });
+  });
+
+  /* ---- copy buttons: any element with data-copy ---- */
+  $$("[data-copy]").forEach(function (btn) {
+    btn.addEventListener("click", function (e) {
+      e.preventDefault(); e.stopPropagation();
+      var text = btn.dataset.copy, old = btn.textContent;
+      function done() { btn.classList.add("copied"); btn.textContent = "Copied"; setTimeout(function () { btn.classList.remove("copied"); btn.textContent = old; }, 1400); }
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, function () {});
+    });
+  });
+
+  /* ---- stop double submits and show a busy state ---- */
+  $$("form").forEach(function (form) {
+    form.addEventListener("submit", function () {
+      if (form.dataset.confirm) return;
+      var b = form.querySelector("button[type=submit]:not([data-no-busy])");
+      if (b) setTimeout(function () { b.classList.add("is-busy"); b.disabled = true; }, 0);
+    });
+  });
+
+  /* ---- keyboard shortcuts: "/" jumps to search, "D" switches theme ---- */
+  document.addEventListener("keydown", function (e) {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    var t = e.target, typing = t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName));
+    if (typing) { if (e.key === "Escape") t.blur(); return; }
+    if (e.key === "/") {
+      var box = $("[data-filter-input]");
+      if (box) { e.preventDefault(); box.scrollIntoView({ block: "center" }); box.focus(); }
+    } else if (e.key === "d" || e.key === "D") {
+      var tg = $("[data-theme-toggle]");
+      if (tg) { tg.click(); }
+    }
   });
 
   /* ---- backup button ---- */

@@ -1,8 +1,8 @@
 {% extends "base.html" %}
-{% from "_macros.html" import logo %}
+{% from "_macros.html" import logo, theme_toggle %}
 {% block body_class %}auth-page{% endblock %}
 {% block body %}
-<main class="auth">
+<main class="auth" id="main-content">
   <aside class="auth-side">
     <div class="hero-glow hero-glow-a"></div>
     <div class="hero-glow hero-glow-b"></div>
@@ -20,6 +20,7 @@
   </aside>
 
   <section class="auth-main">
+    <span class="auth-theme">{{ theme_toggle() }}</span>
     <a class="back-link" href="{{ url_for('auth.landing') }}">← Back to home</a>
     <div class="auth-card">
       {% block auth_content %}{% endblock %}

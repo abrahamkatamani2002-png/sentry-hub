@@ -3,7 +3,7 @@
 {% block title %}{{ title }}{% endblock %}
 {% block body_class %}error-page{% endblock %}
 {% block body %}
-<main class="error-wrap">
+<main class="error-wrap" id="main-content">
   <a class="brand brand-dark" href="{{ url_for('auth.landing') }}">{{ logo(34) }}<span>Sentry Hub</span></a>
   <div class="error-card">
     <span class="error-code">{{ code }}</span>
