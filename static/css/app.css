@@ -562,21 +562,7 @@ body.app { background: radial-gradient(900px 420px at 100% -10%, rgba(16, 185, 1
 .topbar-title h1 { font-size: 1.65rem; letter-spacing: -.02em; }
 
 /* desktop: slim floating icon rail instead of the wide sidebar */
-@media (min-width: 901px) {
-  .shell { grid-template-columns: 116px 1fr; }
-  .sidebar { z-index: 30; top: 18px; height: calc(100vh - 36px); margin: 18px 0 18px 18px; border-radius: 30px; padding: 22px 12px; align-items: center; gap: 18px; }
-  .sidebar .brand span { display: none; }
-  .side-nav { justify-items: center; width: 100%; gap: 10px; }
-  .side-nav a { position: relative; font-size: 0; padding: 0; width: 48px; height: 48px; justify-content: center; border-radius: 15px; box-shadow: none !important; background: none !important; }
-  .side-nav a span { font-size: 1.2rem; width: 48px; height: 48px; border-radius: 15px; }
-  .side-nav a.active span { background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 8px 20px rgba(16, 185, 129, .45); }
-  .side-nav a .nav-badge { display: none; }
-  .side-nav a:hover::after { content: attr(title); position: absolute; left: calc(100% + 14px); top: 50%; transform: translateY(-50%); white-space: nowrap; background: var(--ink); color: #fff; font-size: .8rem; font-weight: 700; padding: 6px 12px; border-radius: 10px; box-shadow: var(--shadow-lg); pointer-events: none; }
-  .side-foot { width: 100%; justify-items: center; gap: 10px; }
-  .me { padding: 6px; background: none; }
-  .me > div { display: none; }
-  .side-foot .btn { padding: 9px 6px; font-size: .7rem; width: 100%; border-radius: 12px; }
-}
+
 @media (max-width: 560px) { .nav-cta .btn-ghost { display: none; } .hero-light { padding-top: 140px; } }
 
 /* ---------- v5: theme toggle, dark mode, small professional touches ---------- */
@@ -671,23 +657,9 @@ kbd { font: 700 .72rem var(--font); border: 1px solid var(--line); border-bottom
 .app-foot kbd { margin: 0 4px 0 10px; }
 .signout .so-ic { display: none; }
 
-@media (min-width: 901px) {
-  /* rail: frosted column, squircle buttons, gold marker on the active page */
-  .sidebar { background: linear-gradient(180deg, rgba(8, 25, 48, .96), rgba(10, 33, 64, .96)); border: 1px solid rgba(255, 255, 255, .07); box-shadow: 0 20px 50px rgba(4, 14, 30, .35); }
-  .side-nav { position: relative; padding: 8px 0; gap: 12px; }
-  .side-nav a { width: 52px; height: 52px; border-radius: 18px; background: rgba(255, 255, 255, .04) !important; border: 1px solid rgba(255, 255, 255, .08); transition: transform .18s, background .18s, border-color .18s, box-shadow .18s; }
-  .side-nav a span { width: 100%; height: 100%; border-radius: 18px; background: none !important; transition: transform .18s; }
-  .side-nav a:hover { transform: translateY(-2px); background: rgba(52, 211, 153, .14) !important; border-color: rgba(52, 211, 153, .45); box-shadow: 0 8px 22px rgba(16, 185, 129, .28) !important; }
-  .side-nav a:hover span { transform: scale(1.12); }
-  .side-nav a.active { background: linear-gradient(145deg, #10b981, #047857) !important; border-color: rgba(255, 255, 255, .25); box-shadow: 0 10px 26px rgba(16, 185, 129, .5) !important; }
-  .side-nav a.active span { background: none !important; box-shadow: none; }
-  .side-nav a.active::before { content: ""; position: absolute; left: -17px; top: 14px; bottom: 14px; width: 5px; border-radius: 0 6px 6px 0; background: var(--gold); box-shadow: 0 0 14px rgba(245, 184, 46, .8); }
-  .side-nav a .nav-badge { display: block; position: absolute; top: -4px; right: -4px; width: 14px; height: 14px; padding: 0; font-size: 0; border-radius: 50%; background: var(--gold); border: 2px solid #0a2140; }
-  .side-nav a:hover::after { background: #fff; color: var(--ink); font-weight: 800; box-shadow: 0 10px 30px rgba(0, 0, 0, .3); }
-  .side-foot .btn.signout { width: 52px; height: 52px; padding: 0; border-radius: 18px; background: rgba(244, 63, 94, .12); border: 1px solid rgba(244, 63, 94, .35); color: #fda4b4; transition: transform .18s, background .18s; }
-  .side-foot .btn.signout:hover { background: rgba(244, 63, 94, .28); transform: translateY(-2px); }
-  .signout .so-ic { display: inline; font-size: 1.15rem; } .signout .so-txt { display: none; }
-  .me { padding: 0; } .me .avatar { box-shadow: 0 0 0 3px rgba(52, 211, 153, .35); }
-}
+
 @media (max-width: 900px) { .status-chip { display: none; } .crumbs { display: none; } }
 @media (max-width: 700px) { .app-foot-keys { display: none; } }
+
+/* sidebar: classic labelled style (logo + name, text links, profile card, Sign out) */
+.side-nav a .nav-badge { display: inline-block; }
